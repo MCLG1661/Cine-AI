@@ -110,15 +110,7 @@ O projeto tem como ponto de partida os conhecimentos desenvolvidos durante a:
 
 **Imersão Front-End na Era da IA — Alura**
 
-A versão apresentada neste repositório está sendo reconstruída e ampliada como um projeto autoral de portfólio.
-
----
-
-## 📈 Status
-
-🚧 **Em desenvolvimento**
-
-O projeto está sendo construído incrementalmente e novas funcionalidades serão adicionadas ao longo de sua evolução.
+A versão apresentada neste repositório foi ampliada como um projeto autoral de portfólio.
 
 ---
 
