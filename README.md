@@ -1,2 +1,2 @@
-# cineai
-CineAI — Streaming Experience powered by AI
+# Cine AI
+*Streaming Experience powered by AI*
