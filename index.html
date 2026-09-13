@@ -2,29 +2,48 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <meta
     name="description"
     content="CineAI - Uma experiência de streaming desenvolvida com HTML, CSS, JavaScript e Inteligência Artificial."
   >
 
-  <title>CineAI | Streaming Experience powered by AI</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>
+    CineAI | Streaming Experience powered by AI
+  </title>
 
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
   >
 
-  <link rel="stylesheet" href="css/style.css">
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
 </head>
+
 
 <body>
 
   <header class="header">
+
     <div class="container header__content">
 
       <a
@@ -35,10 +54,12 @@
         Cine<span>AI</span>
       </a>
 
+
       <nav
         class="navigation"
         aria-label="Navegação principal"
       >
+
         <a href="#inicio">
           Início
         </a>
@@ -54,7 +75,9 @@
         <a href="#minha-lista">
           Minha Lista
         </a>
+
       </nav>
+
 
       <div class="header__actions">
 
@@ -73,6 +96,7 @@
       </div>
 
     </div>
+
   </header>
 
 
@@ -189,12 +213,11 @@
 
   <main>
 
-    <!-- HERO DINÂMICO -->
+    <!-- HERO -->
 
     <section
       class="hero"
       id="inicio"
-      data-hero-movie-id="3"
     >
 
       <div class="hero__overlay"></div>
@@ -209,14 +232,18 @@
         </span>
 
         <h1 id="heroTitle">
-          Além do Código
+          CineAI
         </h1>
 
+        <div
+          class="hero__meta"
+          id="heroMeta"
+        ></div>
+
         <p id="heroDescription">
-          Uma equipe de pesquisadores desenvolve uma inteligência
-          artificial capaz de aprender emoções humanas, alterando
-          o equilíbrio entre tecnologia e sociedade.
+          Descubra sua próxima história favorita.
         </p>
+
 
         <div class="hero__buttons">
 
@@ -232,6 +259,37 @@
             id="heroDetailsButton"
           >
             ⓘ Mais informações
+          </button>
+
+        </div>
+
+
+        <div
+          class="hero-carousel"
+          aria-label="Controles dos destaques"
+        >
+
+          <button
+            class="hero-carousel__arrow"
+            id="heroPrevious"
+            aria-label="Destaque anterior"
+          >
+            ←
+          </button>
+
+
+          <div
+            class="hero-carousel__indicators"
+            id="heroIndicators"
+          ></div>
+
+
+          <button
+            class="hero-carousel__arrow"
+            id="heroNext"
+            aria-label="Próximo destaque"
+          >
+            →
           </button>
 
         </div>
@@ -263,13 +321,6 @@
             </h2>
 
           </div>
-
-          <a
-            href="#filmes"
-            class="view-all"
-          >
-            Ver todos
-          </a>
 
         </div>
 
@@ -309,6 +360,7 @@
 
         </div>
 
+
         <div
           class="movie-grid"
           id="seriesGrid"
@@ -344,6 +396,7 @@
 
         </div>
 
+
         <div class="empty-list">
 
           <span>
@@ -367,8 +420,6 @@
 
   </main>
 
-
-  <!-- FOOTER -->
 
   <footer class="footer">
 
