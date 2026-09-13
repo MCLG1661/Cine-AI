@@ -2,6 +2,12 @@
 
 **Streaming Experience powered by AI**
 
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![AI Assisted](https://img.shields.io/badge/AI-Assisted%20Development-6C63FF?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-orange?style=for-the-badge)
+
 CineAI é uma aplicação Front-End inspirada em plataformas de streaming, desenvolvida com **HTML, CSS e JavaScript**, utilizando **Inteligência Artificial como copiloto durante o processo de desenvolvimento**.
 
 O projeto nasceu como evolução de uma experiência prática realizada durante a **Imersão Front-End na Era da IA, da Alura**, e foi posteriormente reconstruído com identidade própria para integrar meu portfólio de projetos em tecnologia.
