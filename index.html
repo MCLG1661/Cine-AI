@@ -27,15 +27,33 @@
   <header class="header">
     <div class="container header__content">
 
-      <a href="#inicio" class="logo" aria-label="CineAI - Página inicial">
+      <a
+        href="#inicio"
+        class="logo"
+        aria-label="CineAI - Página inicial"
+      >
         Cine<span>AI</span>
       </a>
 
-      <nav class="navigation" aria-label="Navegação principal">
-        <a href="#inicio">Início</a>
-        <a href="#filmes">Filmes</a>
-        <a href="#series">Séries</a>
-        <a href="#minha-lista">Minha Lista</a>
+      <nav
+        class="navigation"
+        aria-label="Navegação principal"
+      >
+        <a href="#inicio">
+          Início
+        </a>
+
+        <a href="#filmes">
+          Filmes
+        </a>
+
+        <a href="#series">
+          Séries
+        </a>
+
+        <a href="#minha-lista">
+          Minha Lista
+        </a>
       </nav>
 
       <div class="header__actions">
@@ -58,9 +76,16 @@
   </header>
 
 
-  <div class="search-panel" id="searchPanel">
+  <!-- BUSCA -->
 
-    <div class="container search-panel__content">
+  <div
+    class="search-panel"
+    id="searchPanel"
+  >
+
+    <div
+      class="container search-panel__content"
+    >
 
       <div class="search-field">
 
@@ -164,33 +189,48 @@
 
   <main>
 
-    <section class="hero" id="inicio">
+    <!-- HERO DINÂMICO -->
+
+    <section
+      class="hero"
+      id="inicio"
+      data-hero-movie-id="3"
+    >
 
       <div class="hero__overlay"></div>
 
       <div class="container hero__content">
 
-        <span class="hero__badge">
+        <span
+          class="hero__badge"
+          id="heroBadge"
+        >
           Destaque CineAI
         </span>
 
-        <h1>
-          Descubra sua próxima história favorita.
+        <h1 id="heroTitle">
+          Além do Código
         </h1>
 
-        <p>
-          Filmes, séries e experiências selecionadas para você.
-          Explore novos títulos e descubra conteúdos de uma forma
-          simples, moderna e inteligente.
+        <p id="heroDescription">
+          Uma equipe de pesquisadores desenvolve uma inteligência
+          artificial capaz de aprender emoções humanas, alterando
+          o equilíbrio entre tecnologia e sociedade.
         </p>
 
         <div class="hero__buttons">
 
-          <button class="button button--primary">
+          <button
+            class="button button--primary"
+            id="heroTrailerButton"
+          >
             ▶ Assistir
           </button>
 
-          <button class="button button--secondary">
+          <button
+            class="button button--secondary"
+            id="heroDetailsButton"
+          >
             ⓘ Mais informações
           </button>
 
@@ -201,13 +241,19 @@
     </section>
 
 
-    <section class="catalog" id="filmes">
+    <!-- FILMES -->
+
+    <section
+      class="catalog"
+      id="filmes"
+    >
 
       <div class="container">
 
         <div class="section-header">
 
           <div>
+
             <span class="section-label">
               CineAI recomenda
             </span>
@@ -215,13 +261,18 @@
             <h2>
               Em destaque
             </h2>
+
           </div>
 
-          <a href="#filmes" class="view-all">
+          <a
+            href="#filmes"
+            class="view-all"
+          >
             Ver todos
           </a>
 
         </div>
+
 
         <div
           class="movie-grid"
@@ -233,13 +284,19 @@
     </section>
 
 
-    <section class="catalog" id="series">
+    <!-- SÉRIES -->
+
+    <section
+      class="catalog"
+      id="series"
+    >
 
       <div class="container">
 
         <div class="section-header">
 
           <div>
+
             <span class="section-label">
               Para maratonar
             </span>
@@ -247,6 +304,7 @@
             <h2>
               Séries populares
             </h2>
+
           </div>
 
         </div>
@@ -261,13 +319,19 @@
     </section>
 
 
-    <section class="catalog" id="minha-lista">
+    <!-- MINHA LISTA -->
+
+    <section
+      class="catalog"
+      id="minha-lista"
+    >
 
       <div class="container">
 
         <div class="section-header">
 
           <div>
+
             <span class="section-label">
               Seus favoritos
             </span>
@@ -275,13 +339,16 @@
             <h2>
               Minha Lista
             </h2>
+
           </div>
 
         </div>
 
         <div class="empty-list">
 
-          <span>♡</span>
+          <span>
+            ♡
+          </span>
 
           <p>
             Sua lista ainda está vazia.
@@ -300,6 +367,8 @@
 
   </main>
 
+
+  <!-- FOOTER -->
 
   <footer class="footer">
 
