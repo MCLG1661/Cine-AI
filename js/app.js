@@ -1,6 +1,13 @@
+```javascript
 const featuredMoviesContainer = document.getElementById("featuredMovies");
 const seriesGrid = document.getElementById("seriesGrid");
 const myListSection = document.getElementById("minha-lista");
+
+const searchButton = document.getElementById("searchButton");
+const searchPanel = document.getElementById("searchPanel");
+const searchInput = document.getElementById("searchInput");
+const searchClose = document.getElementById("searchClose");
+const searchResults = document.getElementById("searchResults");
 
 const STORAGE_KEY = "cineai-my-list";
 
@@ -72,7 +79,6 @@ function createMovieCard(movie) {
     isInMyList(movie.id);
 
   article.classList.add("movie-card");
-
   article.dataset.id = movie.id;
 
   article.innerHTML = `
@@ -162,7 +168,7 @@ function createMovieCard(movie) {
 
 
 /* ======================================================
-   FILMES EM DESTAQUE
+   RENDERIZAÇÃO PRINCIPAL
 ====================================================== */
 
 function renderFeaturedMovies() {
@@ -178,19 +184,12 @@ function renderFeaturedMovies() {
   featuredMoviesContainer.innerHTML = "";
 
   featuredMovies.forEach(movie => {
-    const card =
-      createMovieCard(movie);
-
     featuredMoviesContainer.appendChild(
-      card
+      createMovieCard(movie)
     );
   });
 }
 
-
-/* ======================================================
-   SÉRIES
-====================================================== */
 
 function renderSeries() {
   if (!seriesGrid) {
@@ -205,10 +204,9 @@ function renderSeries() {
   seriesGrid.innerHTML = "";
 
   series.forEach(seriesItem => {
-    const card =
-      createMovieCard(seriesItem);
-
-    seriesGrid.appendChild(card);
+    seriesGrid.appendChild(
+      createMovieCard(seriesItem)
+    );
   });
 }
 
@@ -265,7 +263,9 @@ function renderMyList() {
       </small>
     `;
 
-    container.appendChild(emptyState);
+    container.appendChild(
+      emptyState
+    );
 
     return;
   }
@@ -277,13 +277,120 @@ function renderMyList() {
     "movie-grid my-list-grid";
 
   savedMovies.forEach(movie => {
-    const card =
-      createMovieCard(movie);
-
-    grid.appendChild(card);
+    grid.appendChild(
+      createMovieCard(movie)
+    );
   });
 
   container.appendChild(grid);
+}
+
+
+/* ======================================================
+   BUSCA
+====================================================== */
+
+function openSearch() {
+  searchPanel.classList.add(
+    "is-open"
+  );
+
+  document.body.classList.add(
+    "search-open"
+  );
+
+  setTimeout(() => {
+    searchInput.focus();
+  }, 100);
+}
+
+
+function closeSearch() {
+  searchPanel.classList.remove(
+    "is-open"
+  );
+
+  document.body.classList.remove(
+    "search-open"
+  );
+
+  searchInput.value = "";
+
+  searchResults.innerHTML = "";
+}
+
+
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    );
+}
+
+
+function searchMovies(searchTerm) {
+  const term =
+    normalizeText(
+      searchTerm.trim()
+    );
+
+  if (!term) {
+    searchResults.innerHTML = `
+      <div class="search-empty">
+        Digite o nome de um filme, série ou gênero.
+      </div>
+    `;
+
+    return;
+  }
+
+  const results =
+    movies.filter(movie => {
+      const searchableText =
+        normalizeText(
+          `${movie.title} ${movie.genre} ${movie.description}`
+        );
+
+      return searchableText.includes(
+        term
+      );
+    });
+
+  renderSearchResults(results);
+}
+
+
+function renderSearchResults(results) {
+  searchResults.innerHTML = "";
+
+  if (results.length === 0) {
+    searchResults.innerHTML = `
+      <div class="search-empty">
+        Nenhum título encontrado.
+      </div>
+    `;
+
+    return;
+  }
+
+  const grid =
+    document.createElement("div");
+
+  grid.className =
+    "movie-grid search-results__grid";
+
+  results.forEach(movie => {
+    grid.appendChild(
+      createMovieCard(movie)
+    );
+  });
+
+  searchResults.appendChild(
+    grid
+  );
 }
 
 
@@ -388,9 +495,7 @@ function createDetailsModal() {
     "detailsModal";
 
   modal.innerHTML = `
-    <div
-      class="details-modal__backdrop"
-    ></div>
+    <div class="details-modal__backdrop"></div>
 
     <div
       class="details-modal__content"
@@ -406,9 +511,7 @@ function createDetailsModal() {
         ✕
       </button>
 
-      <div
-        class="details-modal__hero"
-      >
+      <div class="details-modal__hero">
 
         <div
           class="details-modal__icon"
@@ -419,19 +522,13 @@ function createDetailsModal() {
 
       </div>
 
-      <div
-        class="details-modal__body"
-      >
+      <div class="details-modal__body">
 
-        <span
-          class="section-label"
-        >
+        <span class="section-label">
           CineAI
         </span>
 
-        <h2
-          id="modalTitle"
-        ></h2>
+        <h2 id="modalTitle"></h2>
 
         <div
           class="details-modal__meta"
@@ -443,9 +540,7 @@ function createDetailsModal() {
           id="modalDescription"
         ></p>
 
-        <div
-          class="details-modal__buttons"
-        >
+        <div class="details-modal__buttons">
 
           <button
             class="button button--primary"
@@ -618,10 +713,19 @@ function closeDetailsModal() {
 
 function refreshInterface() {
   renderFeaturedMovies();
-
   renderSeries();
-
   renderMyList();
+
+  if (
+    searchPanel.classList.contains(
+      "is-open"
+    ) &&
+    searchInput.value.trim()
+  ) {
+    searchMovies(
+      searchInput.value
+    );
+  }
 
   const modalFavoriteButton =
     document.getElementById(
@@ -642,7 +746,33 @@ function refreshInterface() {
 
 
 /* ======================================================
-   EVENTOS
+   EVENTOS DE BUSCA
+====================================================== */
+
+searchButton.addEventListener(
+  "click",
+  openSearch
+);
+
+
+searchClose.addEventListener(
+  "click",
+  closeSearch
+);
+
+
+searchInput.addEventListener(
+  "input",
+  event => {
+    searchMovies(
+      event.target.value
+    );
+  }
+);
+
+
+/* ======================================================
+   EVENTOS GERAIS
 ====================================================== */
 
 document.addEventListener(
@@ -816,6 +946,14 @@ document.addEventListener(
     });
 
     closeDetailsModal();
+
+    if (
+      searchPanel.classList.contains(
+        "is-open"
+      )
+    ) {
+      closeSearch();
+    }
   }
 );
 
@@ -827,3 +965,10 @@ document.addEventListener(
 createDetailsModal();
 
 refreshInterface();
+
+searchResults.innerHTML = `
+  <div class="search-empty">
+    Digite o nome de um filme, série ou gênero.
+  </div>
+`;
+```
