@@ -1,4 +1,3 @@
-```javascript
 const featuredMoviesContainer = document.getElementById("featuredMovies");
 const seriesGrid = document.getElementById("seriesGrid");
 const myListSection = document.getElementById("minha-lista");
@@ -8,10 +7,12 @@ const searchPanel = document.getElementById("searchPanel");
 const searchInput = document.getElementById("searchInput");
 const searchClose = document.getElementById("searchClose");
 const searchResults = document.getElementById("searchResults");
+const genreFilters = document.getElementById("genreFilters");
 
 const STORAGE_KEY = "cineai-my-list";
 
 let myList = loadMyList();
+let selectedGenre = "all";
 
 
 /* ======================================================
@@ -20,19 +21,24 @@ let myList = loadMyList();
 
 function loadMyList() {
   try {
-    const storedList = localStorage.getItem(STORAGE_KEY);
+    const storedList =
+      localStorage.getItem(STORAGE_KEY);
 
     if (!storedList) {
       return [];
     }
 
-    const parsedList = JSON.parse(storedList);
+    const parsedList =
+      JSON.parse(storedList);
 
     return Array.isArray(parsedList)
       ? parsedList
       : [];
   } catch (error) {
-    console.error("Erro ao carregar Minha Lista:", error);
+    console.error(
+      "Erro ao carregar Minha Lista:",
+      error
+    );
 
     return [];
   }
@@ -40,10 +46,17 @@ function loadMyList() {
 
 
 function saveMyList() {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(myList)
-  );
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(myList)
+    );
+  } catch (error) {
+    console.error(
+      "Erro ao salvar Minha Lista:",
+      error
+    );
+  }
 }
 
 
@@ -62,8 +75,29 @@ function toggleMyList(movieId) {
   }
 
   saveMyList();
-
   refreshInterface();
+}
+
+
+/* ======================================================
+   UTILITÁRIOS
+====================================================== */
+
+function getTypeLabel(movie) {
+  return movie.type === "series"
+    ? "Série"
+    : "Filme";
+}
+
+
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    );
 }
 
 
@@ -78,26 +112,89 @@ function createMovieCard(movie) {
   const saved =
     isInMyList(movie.id);
 
-  article.classList.add("movie-card");
-  article.dataset.id = movie.id;
+  const typeLabel =
+    getTypeLabel(movie);
+
+  article.classList.add(
+    "movie-card"
+  );
+
+  article.dataset.id =
+    movie.id;
 
   article.innerHTML = `
     <div
-      class="movie-card__image movie-placeholder"
+      class="movie-card__poster"
       style="background: ${movie.posterGradient};"
     >
-      <span>${movie.icon}</span>
+
+      <div class="movie-card__poster-effects"></div>
+
+      <div class="movie-card__poster-top">
+
+        <span class="movie-type-badge">
+          ${typeLabel}
+        </span>
+
+        <span class="movie-rating-badge">
+          ★ ${movie.rating}
+        </span>
+
+      </div>
+
+      <div class="movie-card__poster-center">
+
+        <span class="movie-card__icon">
+          ${movie.icon}
+        </span>
+
+      </div>
+
+      <div class="movie-card__poster-bottom">
+
+        <span class="movie-card__year">
+          ${movie.year}
+        </span>
+
+        <h3 class="movie-card__poster-title">
+          ${movie.title}
+        </h3>
+
+        <span class="movie-card__poster-genre">
+          ${movie.genre}
+        </span>
+
+      </div>
+
     </div>
+
 
     <div class="movie-card__content">
 
-      <h3>${movie.title}</h3>
+      <div class="movie-card__info">
 
-      <div class="movie-card__meta">
-        <span>${movie.year}</span>
-        <span>${movie.genre}</span>
-        <span>⭐ ${movie.rating}</span>
+        <h3>
+          ${movie.title}
+        </h3>
+
+        <div class="movie-card__meta">
+
+          <span>
+            ${movie.year}
+          </span>
+
+          <span>
+            ${movie.genre}
+          </span>
+
+          <span>
+            ${movie.duration}
+          </span>
+
+        </div>
+
       </div>
+
 
       <div class="movie-card__actions">
 
@@ -140,6 +237,7 @@ function createMovieCard(movie) {
 
     </div>
 
+
     <div class="movie-card__trailer">
 
       <div class="trailer-preview">
@@ -168,7 +266,7 @@ function createMovieCard(movie) {
 
 
 /* ======================================================
-   RENDERIZAÇÃO PRINCIPAL
+   FILMES EM DESTAQUE
 ====================================================== */
 
 function renderFeaturedMovies() {
@@ -191,6 +289,10 @@ function renderFeaturedMovies() {
 }
 
 
+/* ======================================================
+   SÉRIES
+====================================================== */
+
 function renderSeries() {
   if (!seriesGrid) {
     return;
@@ -198,7 +300,8 @@ function renderSeries() {
 
   const series =
     movies.filter(
-      movie => movie.type === "series"
+      movie =>
+        movie.type === "series"
     );
 
   seriesGrid.innerHTML = "";
@@ -291,6 +394,10 @@ function renderMyList() {
 ====================================================== */
 
 function openSearch() {
+  if (!searchPanel) {
+    return;
+  }
+
   searchPanel.classList.add(
     "is-open"
   );
@@ -299,13 +406,19 @@ function openSearch() {
     "search-open"
   );
 
+  applySearchAndFilters();
+
   setTimeout(() => {
-    searchInput.focus();
+    searchInput?.focus();
   }, 100);
 }
 
 
 function closeSearch() {
+  if (!searchPanel) {
+    return;
+  }
+
   searchPanel.classList.remove(
     "is-open"
   );
@@ -314,67 +427,116 @@ function closeSearch() {
     "search-open"
   );
 
-  searchInput.value = "";
-
-  searchResults.innerHTML = "";
-}
-
-
-function normalizeText(text) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(
-      /[\u0300-\u036f]/g,
-      ""
-    );
-}
-
-
-function searchMovies(searchTerm) {
-  const term =
-    normalizeText(
-      searchTerm.trim()
-    );
-
-  if (!term) {
-    searchResults.innerHTML = `
-      <div class="search-empty">
-        Digite o nome de um filme, série ou gênero.
-      </div>
-    `;
-
-    return;
+  if (searchInput) {
+    searchInput.value = "";
   }
 
-  const results =
-    movies.filter(movie => {
-      const searchableText =
-        normalizeText(
-          `${movie.title} ${movie.genre} ${movie.description}`
-        );
+  selectedGenre = "all";
 
-      return searchableText.includes(
-        term
+  updateGenreButtons();
+
+  renderSearchResults(movies);
+}
+
+
+/* ======================================================
+   FILTROS
+====================================================== */
+
+function getFilteredMovies() {
+  const searchTerm =
+    normalizeText(
+      searchInput?.value.trim() || ""
+    );
+
+  return movies.filter(movie => {
+    const searchableText =
+      normalizeText(
+        `
+        ${movie.title}
+        ${movie.genre}
+        ${movie.description}
+        ${movie.year}
+        ${getTypeLabel(movie)}
+        `
       );
-    });
+
+    const matchesSearch =
+      !searchTerm ||
+      searchableText.includes(
+        searchTerm
+      );
+
+    const matchesGenre =
+      selectedGenre === "all" ||
+      movie.genre === selectedGenre;
+
+    return (
+      matchesSearch &&
+      matchesGenre
+    );
+  });
+}
+
+
+function applySearchAndFilters() {
+  const results =
+    getFilteredMovies();
 
   renderSearchResults(results);
 }
 
 
 function renderSearchResults(results) {
+  if (!searchResults) {
+    return;
+  }
+
   searchResults.innerHTML = "";
 
   if (results.length === 0) {
     searchResults.innerHTML = `
       <div class="search-empty">
-        Nenhum título encontrado.
+
+        <span class="search-empty__icon">
+          🎬
+        </span>
+
+        <strong>
+          Nenhum título encontrado
+        </strong>
+
+        <p>
+          Tente outro termo ou selecione um gênero diferente.
+        </p>
+
       </div>
     `;
 
     return;
   }
+
+  const resultHeader =
+    document.createElement("div");
+
+  resultHeader.className =
+    "search-results__header";
+
+  resultHeader.innerHTML = `
+    <span>
+      ${results.length}
+      ${
+        results.length === 1
+          ? "título encontrado"
+          : "títulos encontrados"
+      }
+    </span>
+  `;
+
+  searchResults.appendChild(
+    resultHeader
+  );
+
 
   const grid =
     document.createElement("div");
@@ -394,6 +556,24 @@ function renderSearchResults(results) {
 }
 
 
+function updateGenreButtons() {
+  const buttons =
+    document.querySelectorAll(
+      ".genre-filter"
+    );
+
+  buttons.forEach(button => {
+    const genre =
+      button.dataset.genre;
+
+    button.classList.toggle(
+      "is-active",
+      genre === selectedGenre
+    );
+  });
+}
+
+
 /* ======================================================
    MINI TRAILER
 ====================================================== */
@@ -402,6 +582,13 @@ function openTrailer(
   card,
   trailerUrl
 ) {
+  if (
+    !card ||
+    !trailerUrl
+  ) {
+    return;
+  }
+
   const trailerLayer =
     card.querySelector(
       ".movie-card__trailer"
@@ -430,6 +617,10 @@ function openTrailer(
 
 
 function closeTrailer(card) {
+  if (!card) {
+    return;
+  }
+
   const trailerLayer =
     card.querySelector(
       ".movie-card__trailer"
@@ -495,7 +686,9 @@ function createDetailsModal() {
     "detailsModal";
 
   modal.innerHTML = `
-    <div class="details-modal__backdrop"></div>
+    <div
+      class="details-modal__backdrop"
+    ></div>
 
     <div
       class="details-modal__content"
@@ -511,16 +704,36 @@ function createDetailsModal() {
         ✕
       </button>
 
+
       <div class="details-modal__hero">
 
-        <div
-          class="details-modal__icon"
-          id="modalIcon"
-        >
-          🎬
+        <div class="details-modal__poster-overlay"></div>
+
+        <div class="details-modal__hero-content">
+
+          <span
+            class="details-modal__type"
+            id="modalType"
+          >
+            Filme
+          </span>
+
+          <div
+            class="details-modal__icon"
+            id="modalIcon"
+          >
+            🎬
+          </div>
+
+          <span
+            class="details-modal__hero-title"
+            id="modalHeroTitle"
+          ></span>
+
         </div>
 
       </div>
+
 
       <div class="details-modal__body">
 
@@ -584,9 +797,24 @@ function openDetailsModal(movie) {
       ".details-modal__content"
     );
 
+  const hero =
+    modal.querySelector(
+      ".details-modal__hero"
+    );
+
   const icon =
     document.getElementById(
       "modalIcon"
+    );
+
+  const type =
+    document.getElementById(
+      "modalType"
+    );
+
+  const heroTitle =
+    document.getElementById(
+      "modalHeroTitle"
     );
 
   const title =
@@ -614,37 +842,59 @@ function openDetailsModal(movie) {
       "modalFavoriteButton"
     );
 
-  content.style.background = `
-    linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(8, 11, 18, 0.95) 38%,
-      #080b12 62%
-    ),
-    ${movie.posterGradient}
-  `;
+  if (content) {
+    content.style.background =
+      "#080b12";
+  }
 
-  icon.textContent =
-    movie.icon;
+  if (hero) {
+    hero.style.background =
+      movie.posterGradient;
+  }
 
-  title.textContent =
-    movie.title;
+  if (icon) {
+    icon.textContent =
+      movie.icon;
+  }
 
-  meta.innerHTML = `
-    <span>${movie.year}</span>
-    <span>${movie.genre}</span>
-    <span>${movie.duration}</span>
-    <span>⭐ ${movie.rating}</span>
-  `;
+  if (type) {
+    type.textContent =
+      getTypeLabel(movie);
+  }
 
-  description.textContent =
-    movie.description;
+  if (heroTitle) {
+    heroTitle.textContent =
+      movie.title;
+  }
 
-  trailerButton.dataset.trailer =
-    movie.trailer;
+  if (title) {
+    title.textContent =
+      movie.title;
+  }
 
-  favoriteButton.dataset.movieId =
-    movie.id;
+  if (meta) {
+    meta.innerHTML = `
+      <span>${movie.year}</span>
+      <span>${movie.genre}</span>
+      <span>${movie.duration}</span>
+      <span>⭐ ${movie.rating}</span>
+    `;
+  }
+
+  if (description) {
+    description.textContent =
+      movie.description;
+  }
+
+  if (trailerButton) {
+    trailerButton.dataset.trailer =
+      movie.trailer;
+  }
+
+  if (favoriteButton) {
+    favoriteButton.dataset.movieId =
+      movie.id;
+  }
 
   updateModalFavoriteButton(
     movie.id
@@ -717,14 +967,12 @@ function refreshInterface() {
   renderMyList();
 
   if (
+    searchPanel &&
     searchPanel.classList.contains(
       "is-open"
-    ) &&
-    searchInput.value.trim()
+    )
   ) {
-    searchMovies(
-      searchInput.value
-    );
+    applySearchAndFilters();
   }
 
   const modalFavoriteButton =
@@ -746,27 +994,45 @@ function refreshInterface() {
 
 
 /* ======================================================
-   EVENTOS DE BUSCA
+   EVENTOS DA BUSCA
 ====================================================== */
 
-searchButton.addEventListener(
+searchButton?.addEventListener(
   "click",
   openSearch
 );
 
 
-searchClose.addEventListener(
+searchClose?.addEventListener(
   "click",
   closeSearch
 );
 
 
-searchInput.addEventListener(
+searchInput?.addEventListener(
   "input",
+  applySearchAndFilters
+);
+
+
+genreFilters?.addEventListener(
+  "click",
   event => {
-    searchMovies(
-      event.target.value
-    );
+
+    const button =
+      event.target.closest(
+        ".genre-filter"
+      );
+
+    if (!button) {
+      return;
+    }
+
+    selectedGenre =
+      button.dataset.genre;
+
+    updateGenreButtons();
+    applySearchAndFilters();
   }
 );
 
@@ -948,6 +1214,7 @@ document.addEventListener(
     closeDetailsModal();
 
     if (
+      searchPanel &&
       searchPanel.classList.contains(
         "is-open"
       )
@@ -966,9 +1233,4 @@ createDetailsModal();
 
 refreshInterface();
 
-searchResults.innerHTML = `
-  <div class="search-empty">
-    Digite o nome de um filme, série ou gênero.
-  </div>
-`;
-```
+renderSearchResults(movies);
