@@ -1,5 +1,63 @@
 const featuredMoviesContainer = document.getElementById("featuredMovies");
 const seriesGrid = document.getElementById("seriesGrid");
+const myListSection = document.getElementById("minha-lista");
+
+const STORAGE_KEY = "cineai-my-list";
+
+let myList = loadMyList();
+
+
+/* ======================================================
+   LOCAL STORAGE
+====================================================== */
+
+function loadMyList() {
+  try {
+    const storedList = localStorage.getItem(STORAGE_KEY);
+
+    if (!storedList) {
+      return [];
+    }
+
+    const parsedList = JSON.parse(storedList);
+
+    return Array.isArray(parsedList)
+      ? parsedList
+      : [];
+  } catch (error) {
+    console.error("Erro ao carregar Minha Lista:", error);
+
+    return [];
+  }
+}
+
+
+function saveMyList() {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(myList)
+  );
+}
+
+
+function isInMyList(movieId) {
+  return myList.includes(movieId);
+}
+
+
+function toggleMyList(movieId) {
+  if (isInMyList(movieId)) {
+    myList = myList.filter(
+      id => id !== movieId
+    );
+  } else {
+    myList.push(movieId);
+  }
+
+  saveMyList();
+
+  refreshInterface();
+}
 
 
 /* ======================================================
@@ -7,9 +65,14 @@ const seriesGrid = document.getElementById("seriesGrid");
 ====================================================== */
 
 function createMovieCard(movie) {
-  const article = document.createElement("article");
+  const article =
+    document.createElement("article");
+
+  const saved =
+    isInMyList(movie.id);
 
   article.classList.add("movie-card");
+
   article.dataset.id = movie.id;
 
   article.innerHTML = `
@@ -35,6 +98,7 @@ function createMovieCard(movie) {
         <button
           class="trailer-button"
           aria-label="Assistir mini trailer de ${movie.title}"
+          title="Assistir mini trailer"
           data-trailer="${movie.trailer}"
         >
           ▶
@@ -43,9 +107,27 @@ function createMovieCard(movie) {
         <button
           class="details-button"
           aria-label="Ver mais informações sobre ${movie.title}"
+          title="Mais informações"
           data-movie-id="${movie.id}"
         >
           ⓘ
+        </button>
+
+        <button
+          class="favorite-button ${saved ? "is-saved" : ""}"
+          aria-label="${
+            saved
+              ? `Remover ${movie.title} da Minha Lista`
+              : `Adicionar ${movie.title} à Minha Lista`
+          }"
+          title="${
+            saved
+              ? "Remover da Minha Lista"
+              : "Adicionar à Minha Lista"
+          }"
+          data-movie-id="${movie.id}"
+        >
+          ${saved ? "♥" : "♡"}
         </button>
 
       </div>
@@ -88,16 +170,20 @@ function renderFeaturedMovies() {
     return;
   }
 
-  const featuredMovies = movies.filter(
-    movie => movie.featured
-  );
+  const featuredMovies =
+    movies.filter(
+      movie => movie.featured
+    );
 
   featuredMoviesContainer.innerHTML = "";
 
   featuredMovies.forEach(movie => {
-    const card = createMovieCard(movie);
+    const card =
+      createMovieCard(movie);
 
-    featuredMoviesContainer.appendChild(card);
+    featuredMoviesContainer.appendChild(
+      card
+    );
   });
 }
 
@@ -111,14 +197,16 @@ function renderSeries() {
     return;
   }
 
-  const series = movies.filter(
-    movie => movie.type === "series"
-  );
+  const series =
+    movies.filter(
+      movie => movie.type === "series"
+    );
 
   seriesGrid.innerHTML = "";
 
   series.forEach(seriesItem => {
-    const card = createMovieCard(seriesItem);
+    const card =
+      createMovieCard(seriesItem);
 
     seriesGrid.appendChild(card);
   });
@@ -126,37 +214,142 @@ function renderSeries() {
 
 
 /* ======================================================
+   MINHA LISTA
+====================================================== */
+
+function renderMyList() {
+  if (!myListSection) {
+    return;
+  }
+
+  const container =
+    myListSection.querySelector(
+      ".container"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  const oldContent =
+    container.querySelector(
+      ".empty-list, .my-list-grid"
+    );
+
+  if (oldContent) {
+    oldContent.remove();
+  }
+
+  const savedMovies =
+    movies.filter(movie =>
+      myList.includes(movie.id)
+    );
+
+  if (savedMovies.length === 0) {
+    const emptyState =
+      document.createElement("div");
+
+    emptyState.className =
+      "empty-list";
+
+    emptyState.innerHTML = `
+      <span>♡</span>
+
+      <p>
+        Sua lista ainda está vazia.
+      </p>
+
+      <small>
+        Clique no coração de um filme ou série
+        para adicioná-lo à sua lista.
+      </small>
+    `;
+
+    container.appendChild(emptyState);
+
+    return;
+  }
+
+  const grid =
+    document.createElement("div");
+
+  grid.className =
+    "movie-grid my-list-grid";
+
+  savedMovies.forEach(movie => {
+    const card =
+      createMovieCard(movie);
+
+    grid.appendChild(card);
+  });
+
+  container.appendChild(grid);
+}
+
+
+/* ======================================================
    MINI TRAILER
 ====================================================== */
 
-function openTrailer(card, trailerUrl) {
+function openTrailer(
+  card,
+  trailerUrl
+) {
   const trailerLayer =
-    card.querySelector(".movie-card__trailer");
+    card.querySelector(
+      ".movie-card__trailer"
+    );
+
+  if (!trailerLayer) {
+    return;
+  }
 
   const iframe =
-    trailerLayer.querySelector("iframe");
+    trailerLayer.querySelector(
+      "iframe"
+    );
+
+  if (!iframe) {
+    return;
+  }
 
   iframe.src =
     `${trailerUrl}?autoplay=1&mute=1&rel=0`;
 
-  card.classList.add("is-playing");
+  card.classList.add(
+    "is-playing"
+  );
 }
 
 
 function closeTrailer(card) {
   const trailerLayer =
-    card.querySelector(".movie-card__trailer");
+    card.querySelector(
+      ".movie-card__trailer"
+    );
+
+  if (!trailerLayer) {
+    return;
+  }
 
   const iframe =
-    trailerLayer.querySelector("iframe");
+    trailerLayer.querySelector(
+      "iframe"
+    );
 
-  iframe.src = "";
+  if (iframe) {
+    iframe.src = "";
+  }
 
-  card.classList.remove("is-playing");
+  card.classList.remove(
+    "is-playing"
+  );
 }
 
 
-function closeOtherTrailers(currentCard) {
+function closeOtherTrailers(
+  currentCard
+) {
   const openedCards =
     document.querySelectorAll(
       ".movie-card.is-playing"
@@ -175,13 +368,29 @@ function closeOtherTrailers(currentCard) {
 ====================================================== */
 
 function createDetailsModal() {
-  const modal = document.createElement("div");
+  const existingModal =
+    document.getElementById(
+      "detailsModal"
+    );
 
-  modal.classList.add("details-modal");
-  modal.id = "detailsModal";
+  if (existingModal) {
+    return;
+  }
+
+  const modal =
+    document.createElement("div");
+
+  modal.classList.add(
+    "details-modal"
+  );
+
+  modal.id =
+    "detailsModal";
 
   modal.innerHTML = `
-    <div class="details-modal__backdrop"></div>
+    <div
+      class="details-modal__backdrop"
+    ></div>
 
     <div
       class="details-modal__content"
@@ -197,34 +406,59 @@ function createDetailsModal() {
         ✕
       </button>
 
-      <div class="details-modal__hero">
-        <div class="details-modal__icon" id="modalIcon">
+      <div
+        class="details-modal__hero"
+      >
+
+        <div
+          class="details-modal__icon"
+          id="modalIcon"
+        >
           🎬
         </div>
+
       </div>
 
-      <div class="details-modal__body">
+      <div
+        class="details-modal__body"
+      >
 
-        <span class="section-label">
+        <span
+          class="section-label"
+        >
           CineAI
         </span>
 
-        <h2 id="modalTitle"></h2>
+        <h2
+          id="modalTitle"
+        ></h2>
 
-        <div class="details-modal__meta" id="modalMeta"></div>
+        <div
+          class="details-modal__meta"
+          id="modalMeta"
+        ></div>
 
         <p
           class="details-modal__description"
           id="modalDescription"
         ></p>
 
-        <div class="details-modal__buttons">
+        <div
+          class="details-modal__buttons"
+        >
 
           <button
             class="button button--primary"
             id="modalTrailerButton"
           >
             ▶ Assistir trailer
+          </button>
+
+          <button
+            class="button button--secondary"
+            id="modalFavoriteButton"
+          >
+            ♡ Minha Lista
           </button>
 
         </div>
@@ -234,35 +468,56 @@ function createDetailsModal() {
     </div>
   `;
 
-  document.body.appendChild(modal);
+  document.body.appendChild(
+    modal
+  );
 }
 
 
 function openDetailsModal(movie) {
   const modal =
-    document.getElementById("detailsModal");
+    document.getElementById(
+      "detailsModal"
+    );
 
   if (!modal) {
     return;
   }
 
   const content =
-    modal.querySelector(".details-modal__content");
+    modal.querySelector(
+      ".details-modal__content"
+    );
 
   const icon =
-    document.getElementById("modalIcon");
+    document.getElementById(
+      "modalIcon"
+    );
 
   const title =
-    document.getElementById("modalTitle");
+    document.getElementById(
+      "modalTitle"
+    );
 
   const meta =
-    document.getElementById("modalMeta");
+    document.getElementById(
+      "modalMeta"
+    );
 
   const description =
-    document.getElementById("modalDescription");
+    document.getElementById(
+      "modalDescription"
+    );
 
   const trailerButton =
-    document.getElementById("modalTrailerButton");
+    document.getElementById(
+      "modalTrailerButton"
+    );
+
+  const favoriteButton =
+    document.getElementById(
+      "modalFavoriteButton"
+    );
 
   content.style.background = `
     linear-gradient(
@@ -274,9 +529,11 @@ function openDetailsModal(movie) {
     ${movie.posterGradient}
   `;
 
-  icon.textContent = movie.icon;
+  icon.textContent =
+    movie.icon;
 
-  title.textContent = movie.title;
+  title.textContent =
+    movie.title;
 
   meta.innerHTML = `
     <span>${movie.year}</span>
@@ -291,23 +548,96 @@ function openDetailsModal(movie) {
   trailerButton.dataset.trailer =
     movie.trailer;
 
-  modal.classList.add("is-open");
+  favoriteButton.dataset.movieId =
+    movie.id;
 
-  document.body.classList.add("modal-open");
+  updateModalFavoriteButton(
+    movie.id
+  );
+
+  modal.classList.add(
+    "is-open"
+  );
+
+  document.body.classList.add(
+    "modal-open"
+  );
+}
+
+
+function updateModalFavoriteButton(
+  movieId
+) {
+  const favoriteButton =
+    document.getElementById(
+      "modalFavoriteButton"
+    );
+
+  if (!favoriteButton) {
+    return;
+  }
+
+  const saved =
+    isInMyList(movieId);
+
+  favoriteButton.textContent =
+    saved
+      ? "♥ Na Minha Lista"
+      : "♡ Minha Lista";
+
+  favoriteButton.classList.toggle(
+    "is-saved",
+    saved
+  );
 }
 
 
 function closeDetailsModal() {
   const modal =
-    document.getElementById("detailsModal");
+    document.getElementById(
+      "detailsModal"
+    );
 
   if (!modal) {
     return;
   }
 
-  modal.classList.remove("is-open");
+  modal.classList.remove(
+    "is-open"
+  );
 
-  document.body.classList.remove("modal-open");
+  document.body.classList.remove(
+    "modal-open"
+  );
+}
+
+
+/* ======================================================
+   ATUALIZAÇÃO DA INTERFACE
+====================================================== */
+
+function refreshInterface() {
+  renderFeaturedMovies();
+
+  renderSeries();
+
+  renderMyList();
+
+  const modalFavoriteButton =
+    document.getElementById(
+      "modalFavoriteButton"
+    );
+
+  if (
+    modalFavoriteButton &&
+    modalFavoriteButton.dataset.movieId
+  ) {
+    updateModalFavoriteButton(
+      Number(
+        modalFavoriteButton.dataset.movieId
+      )
+    );
+  }
 }
 
 
@@ -315,121 +645,179 @@ function closeDetailsModal() {
    EVENTOS
 ====================================================== */
 
-document.addEventListener("click", event => {
+document.addEventListener(
+  "click",
+  event => {
 
-  const trailerButton =
-    event.target.closest(".trailer-button");
-
-  if (trailerButton) {
-
-    const card =
-      trailerButton.closest(".movie-card");
-
-    const trailerUrl =
-      trailerButton.dataset.trailer;
-
-    closeOtherTrailers(card);
-
-    openTrailer(
-      card,
-      trailerUrl
-    );
-
-    return;
-  }
-
-
-  const closeTrailerButton =
-    event.target.closest(".trailer-close");
-
-  if (closeTrailerButton) {
-
-    const card =
-      closeTrailerButton.closest(".movie-card");
-
-    closeTrailer(card);
-
-    return;
-  }
-
-
-  const detailsButton =
-    event.target.closest(".details-button");
-
-  if (detailsButton) {
-
-    const movieId =
-      Number(detailsButton.dataset.movieId);
-
-    const movie =
-      movies.find(
-        item => item.id === movieId
+    const trailerButton =
+      event.target.closest(
+        ".trailer-button"
       );
 
-    if (movie) {
-      openDetailsModal(movie);
-    }
+    if (trailerButton) {
+      const card =
+        trailerButton.closest(
+          ".movie-card"
+        );
 
-    return;
-  }
+      const trailerUrl =
+        trailerButton.dataset.trailer;
 
+      closeOtherTrailers(card);
 
-  const modalClose =
-    event.target.closest(".details-modal__close");
-
-  const modalBackdrop =
-    event.target.closest(".details-modal__backdrop");
-
-  if (modalClose || modalBackdrop) {
-    closeDetailsModal();
-
-    return;
-  }
-
-
-  const modalTrailerButton =
-    event.target.closest("#modalTrailerButton");
-
-  if (modalTrailerButton) {
-
-    const trailerUrl =
-      modalTrailerButton.dataset.trailer;
-
-    if (trailerUrl) {
-      window.open(
-        trailerUrl.replace(
-          "/embed/",
-          "/watch?v="
-        ),
-        "_blank"
+      openTrailer(
+        card,
+        trailerUrl
       );
+
+      return;
+    }
+
+
+    const closeTrailerButton =
+      event.target.closest(
+        ".trailer-close"
+      );
+
+    if (closeTrailerButton) {
+      const card =
+        closeTrailerButton.closest(
+          ".movie-card"
+        );
+
+      closeTrailer(card);
+
+      return;
+    }
+
+
+    const detailsButton =
+      event.target.closest(
+        ".details-button"
+      );
+
+    if (detailsButton) {
+      const movieId =
+        Number(
+          detailsButton.dataset.movieId
+        );
+
+      const movie =
+        movies.find(
+          item =>
+            item.id === movieId
+        );
+
+      if (movie) {
+        openDetailsModal(movie);
+      }
+
+      return;
+    }
+
+
+    const favoriteButton =
+      event.target.closest(
+        ".favorite-button"
+      );
+
+    if (favoriteButton) {
+      const movieId =
+        Number(
+          favoriteButton.dataset.movieId
+        );
+
+      toggleMyList(movieId);
+
+      return;
+    }
+
+
+    const modalFavoriteButton =
+      event.target.closest(
+        "#modalFavoriteButton"
+      );
+
+    if (modalFavoriteButton) {
+      const movieId =
+        Number(
+          modalFavoriteButton.dataset.movieId
+        );
+
+      toggleMyList(movieId);
+
+      return;
+    }
+
+
+    const modalClose =
+      event.target.closest(
+        ".details-modal__close"
+      );
+
+    const modalBackdrop =
+      event.target.closest(
+        ".details-modal__backdrop"
+      );
+
+    if (
+      modalClose ||
+      modalBackdrop
+    ) {
+      closeDetailsModal();
+
+      return;
+    }
+
+
+    const modalTrailerButton =
+      event.target.closest(
+        "#modalTrailerButton"
+      );
+
+    if (modalTrailerButton) {
+      const trailerUrl =
+        modalTrailerButton.dataset.trailer;
+
+      if (trailerUrl) {
+        window.open(
+          trailerUrl.replace(
+            "/embed/",
+            "/watch?v="
+          ),
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
     }
   }
-
-});
+);
 
 
 /* ======================================================
    TECLA ESC
 ====================================================== */
 
-document.addEventListener("keydown", event => {
+document.addEventListener(
+  "keydown",
+  event => {
 
-  if (event.key !== "Escape") {
-    return;
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    const openedCards =
+      document.querySelectorAll(
+        ".movie-card.is-playing"
+      );
+
+    openedCards.forEach(card => {
+      closeTrailer(card);
+    });
+
+    closeDetailsModal();
   }
-
-  const openedCards =
-    document.querySelectorAll(
-      ".movie-card.is-playing"
-    );
-
-  openedCards.forEach(card => {
-    closeTrailer(card);
-  });
-
-  closeDetailsModal();
-});
+);
 
 
 /* ======================================================
@@ -438,6 +826,4 @@ document.addEventListener("keydown", event => {
 
 createDetailsModal();
 
-renderFeaturedMovies();
-
-renderSeries();
+refreshInterface();
