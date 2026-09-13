@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -24,11 +25,10 @@
 
 <body>
 
-  <!-- HEADER -->
   <header class="header">
     <div class="container header__content">
 
-      <a href="#" class="logo" aria-label="CineAI - Página inicial">
+      <a href="#inicio" class="logo" aria-label="CineAI - Página inicial">
         Cine<span>AI</span>
       </a>
 
@@ -59,10 +59,46 @@
   </header>
 
 
-  <!-- MAIN -->
+  <div class="search-panel" id="searchPanel">
+
+    <div class="container search-panel__content">
+
+      <div class="search-field">
+
+        <span class="search-field__icon">
+          🔍
+        </span>
+
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="Buscar filmes ou séries..."
+          autocomplete="off"
+          aria-label="Buscar filmes ou séries"
+        >
+
+        <button
+          class="search-close"
+          id="searchClose"
+          aria-label="Fechar busca"
+        >
+          ✕
+        </button>
+
+      </div>
+
+      <div
+        class="search-results"
+        id="searchResults"
+      ></div>
+
+    </div>
+
+  </div>
+
+
   <main>
 
-    <!-- HERO -->
     <section class="hero" id="inicio">
 
       <div class="hero__overlay"></div>
@@ -100,7 +136,6 @@
     </section>
 
 
-    <!-- CATÁLOGO -->
     <section class="catalog" id="filmes">
 
       <div class="container">
@@ -110,202 +145,4 @@
           <div>
             <span class="section-label">
               CineAI recomenda
-            </span>
-
-            <h2>
-              Em destaque
-            </h2>
-          </div>
-
-          <a href="#" class="view-all">
-            Ver todos
-          </a>
-
-        </div>
-
-
-        <div class="movie-grid" id="featuredMovies">
-
-          <article class="movie-card">
-
-            <div class="movie-card__image movie-placeholder">
-              <span>🎬</span>
-            </div>
-
-            <div class="movie-card__content">
-
-              <h3>Horizonte Infinito</h3>
-
-              <div class="movie-card__meta">
-                <span>2026</span>
-                <span>Ficção</span>
-                <span>⭐ 8.7</span>
-              </div>
-
-            </div>
-
-          </article>
-
-
-          <article class="movie-card">
-
-            <div class="movie-card__image movie-placeholder">
-              <span>🎥</span>
-            </div>
-
-            <div class="movie-card__content">
-
-              <h3>Última Conexão</h3>
-
-              <div class="movie-card__meta">
-                <span>2026</span>
-                <span>Drama</span>
-                <span>⭐ 8.4</span>
-              </div>
-
-            </div>
-
-          </article>
-
-
-          <article class="movie-card">
-
-            <div class="movie-card__image movie-placeholder">
-              <span>🚀</span>
-            </div>
-
-            <div class="movie-card__content">
-
-              <h3>Além do Código</h3>
-
-              <div class="movie-card__meta">
-                <span>2026</span>
-                <span>Sci-Fi</span>
-                <span>⭐ 9.1</span>
-              </div>
-
-            </div>
-
-          </article>
-
-
-          <article class="movie-card">
-
-            <div class="movie-card__image movie-placeholder">
-              <span>🌌</span>
-            </div>
-
-            <div class="movie-card__content">
-
-              <h3>Universo Paralelo</h3>
-
-              <div class="movie-card__meta">
-                <span>2025</span>
-                <span>Aventura</span>
-                <span>⭐ 8.8</span>
-              </div>
-
-            </div>
-
-          </article>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- SÉRIES -->
-    <section class="catalog" id="series">
-
-      <div class="container">
-
-        <div class="section-header">
-
-          <div>
-            <span class="section-label">
-              Para maratonar
-            </span>
-
-            <h2>
-              Séries populares
-            </h2>
-          </div>
-
-        </div>
-
-        <div class="movie-grid" id="seriesGrid"></div>
-
-      </div>
-
-    </section>
-
-
-    <!-- MINHA LISTA -->
-    <section class="catalog" id="minha-lista">
-
-      <div class="container">
-
-        <div class="section-header">
-
-          <div>
-            <span class="section-label">
-              Seus favoritos
-            </span>
-
-            <h2>
-              Minha Lista
-            </h2>
-          </div>
-
-        </div>
-
-        <div class="empty-list">
-
-          <span>❤️</span>
-
-          <p>
-            Sua lista ainda está vazia.
-          </p>
-
-          <small>
-            Em breve você poderá salvar seus filmes e séries favoritos.
-          </small>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <!-- FOOTER -->
-  <footer class="footer">
-
-    <div class="container">
-
-      <div class="footer__logo">
-        Cine<span>AI</span>
-      </div>
-
-      <p>
-        Projeto desenvolvido por Marcus Guedes.
-      </p>
-
-      <p class="footer__technology">
-        HTML • CSS • JavaScript • Inteligência Artificial
-      </p>
-
-    </div>
-
-  </footer>
-
-
-  <script src="js/movies.js"></script>
-  <script src="js/app.js"></script>
-
-</body>
-</html>
+```
