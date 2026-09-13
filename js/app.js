@@ -1,6 +1,11 @@
 const featuredMoviesContainer = document.getElementById("featuredMovies");
 const seriesGrid = document.getElementById("seriesGrid");
 
+
+/* ======================================================
+   CRIAÇÃO DOS CARDS
+====================================================== */
+
 function createMovieCard(movie) {
   const article = document.createElement("article");
 
@@ -8,11 +13,15 @@ function createMovieCard(movie) {
   article.dataset.id = movie.id;
 
   article.innerHTML = `
-    <div class="movie-card__image movie-placeholder">
-      <span>🎬</span>
+    <div
+      class="movie-card__image movie-placeholder"
+      style="background: ${movie.posterGradient};"
+    >
+      <span>${movie.icon}</span>
     </div>
 
     <div class="movie-card__content">
+
       <h3>${movie.title}</h3>
 
       <div class="movie-card__meta">
@@ -28,10 +37,13 @@ function createMovieCard(movie) {
       >
         ▶
       </button>
+
     </div>
 
     <div class="movie-card__trailer">
+
       <div class="trailer-preview">
+
         <button
           class="trailer-close"
           aria-label="Fechar trailer"
@@ -45,77 +57,178 @@ function createMovieCard(movie) {
           allow="autoplay; encrypted-media"
           allowfullscreen
         ></iframe>
+
       </div>
+
     </div>
   `;
 
   return article;
 }
 
-function renderFeaturedMovies() {
-  if (!featuredMoviesContainer) return;
 
-  const featuredMovies = movies.filter(movie => movie.featured);
+/* ======================================================
+   FILMES EM DESTAQUE
+====================================================== */
+
+function renderFeaturedMovies() {
+  if (!featuredMoviesContainer) {
+    return;
+  }
+
+  const featuredMovies = movies.filter(
+    movie => movie.featured
+  );
 
   featuredMoviesContainer.innerHTML = "";
 
   featuredMovies.forEach(movie => {
     const card = createMovieCard(movie);
+
     featuredMoviesContainer.appendChild(card);
   });
 }
 
-function renderSeries() {
-  if (!seriesGrid) return;
 
-  const series = movies.filter(movie => movie.type === "series");
+/* ======================================================
+   SÉRIES
+====================================================== */
+
+function renderSeries() {
+  if (!seriesGrid) {
+    return;
+  }
+
+  const series = movies.filter(
+    movie => movie.type === "series"
+  );
 
   seriesGrid.innerHTML = "";
 
-  series.forEach(movie => {
-    const card = createMovieCard(movie);
+  series.forEach(seriesItem => {
+    const card = createMovieCard(seriesItem);
+
     seriesGrid.appendChild(card);
   });
 }
 
-function openTrailer(card, trailerUrl) {
-  const trailerLayer = card.querySelector(".movie-card__trailer");
-  const iframe = trailerLayer.querySelector("iframe");
 
-  iframe.src = `${trailerUrl}?autoplay=1&mute=1`;
+/* ======================================================
+   MINI TRAILER
+====================================================== */
+
+function openTrailer(card, trailerUrl) {
+  const trailerLayer =
+    card.querySelector(".movie-card__trailer");
+
+  const iframe =
+    trailerLayer.querySelector("iframe");
+
+  iframe.src =
+    `${trailerUrl}?autoplay=1&mute=1&rel=0`;
 
   card.classList.add("is-playing");
 }
 
+
 function closeTrailer(card) {
-  const trailerLayer = card.querySelector(".movie-card__trailer");
-  const iframe = trailerLayer.querySelector("iframe");
+  const trailerLayer =
+    card.querySelector(".movie-card__trailer");
+
+  const iframe =
+    trailerLayer.querySelector("iframe");
 
   iframe.src = "";
 
   card.classList.remove("is-playing");
 }
 
+
+/* ======================================================
+   FECHA OUTROS TRAILERS
+====================================================== */
+
+function closeOtherTrailers(currentCard) {
+  const openedCards =
+    document.querySelectorAll(
+      ".movie-card.is-playing"
+    );
+
+  openedCards.forEach(card => {
+    if (card !== currentCard) {
+      closeTrailer(card);
+    }
+  });
+}
+
+
+/* ======================================================
+   EVENTOS
+====================================================== */
+
 document.addEventListener("click", event => {
-  const trailerButton = event.target.closest(".trailer-button");
+
+  const trailerButton =
+    event.target.closest(".trailer-button");
 
   if (trailerButton) {
-    const card = trailerButton.closest(".movie-card");
-    const trailerUrl = trailerButton.dataset.trailer;
 
-    openTrailer(card, trailerUrl);
+    const card =
+      trailerButton.closest(".movie-card");
+
+    const trailerUrl =
+      trailerButton.dataset.trailer;
+
+    closeOtherTrailers(card);
+
+    openTrailer(
+      card,
+      trailerUrl
+    );
 
     return;
   }
 
-  const closeButton = event.target.closest(".trailer-close");
+
+  const closeButton =
+    event.target.closest(".trailer-close");
 
   if (closeButton) {
-    const card = closeButton.closest(".movie-card");
+
+    const card =
+      closeButton.closest(".movie-card");
 
     closeTrailer(card);
   }
+
 });
+
+
+/* ======================================================
+   ESC FECHA TRAILERS
+====================================================== */
+
+document.addEventListener("keydown", event => {
+
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  const openedCards =
+    document.querySelectorAll(
+      ".movie-card.is-playing"
+    );
+
+  openedCards.forEach(card => {
+    closeTrailer(card);
+  });
+
+});
+
+
+/* ======================================================
+   INICIALIZAÇÃO
+====================================================== */
 
 renderFeaturedMovies();
 renderSeries();
