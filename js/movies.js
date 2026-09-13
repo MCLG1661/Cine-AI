@@ -1,5 +1,5 @@
 const movies = [
-  {
+  { 
     id: 1,
     title: "Horizonte Infinito",
     year: 2026,
