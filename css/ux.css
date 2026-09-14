@@ -1,6 +1,5 @@
 /* ======================================================
    CineAI — UX / UI POLISH
-   Fase 8.12
 ====================================================== */
 
 /* ACESSIBILIDADE */
@@ -261,6 +260,64 @@ button:disabled {
   transform: rotate(8deg) scale(1.06);
 }
 
+/* DETALHES AVANÇADOS — FASE 8.12 */
+
+.details-modal__extra {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top:
+    1px solid rgba(255, 255, 255, 0.08);
+}
+
+.details-extra__grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.details-extra__item,
+.details-extra__original,
+.details-extra__trailer {
+  padding: 14px 16px;
+  border:
+    1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background:
+    rgba(255, 255, 255, 0.035);
+}
+
+.details-extra__item span,
+.details-extra__original span,
+.details-extra__trailer span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.details-extra__item strong,
+.details-extra__original strong,
+.details-extra__trailer strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.91rem;
+  line-height: 1.4;
+}
+
+.details-extra__original,
+.details-extra__trailer {
+  margin-top: 12px;
+}
+
+.details-extra__trailer small {
+  display: block;
+  margin-top: 7px;
+  color: var(--accent);
+}
+
 /* FOOTER */
 
 .footer {
@@ -375,6 +432,11 @@ button:disabled {
   .genre-filter {
     flex: 0 0 auto;
   }
+
+  .details-extra__grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 480px) {
@@ -400,6 +462,10 @@ button:disabled {
 
   .section-header h2 {
     line-height: 1.15;
+  }
+
+  .details-extra__grid {
+    grid-template-columns: 1fr;
   }
 }
 
