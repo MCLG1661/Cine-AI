@@ -147,6 +147,82 @@ let heroTimer =
    LOCAL STORAGE
 ====================================================== */
 
+function normalizeSavedItem(
+  item
+) {
+
+  if (
+    typeof item ===
+      "number"
+  ) {
+
+    return {
+      source:
+        "local",
+
+      id:
+        item
+    };
+  }
+
+
+  if (
+    typeof item ===
+      "string" &&
+    /^\d+$/.test(
+      item
+    )
+  ) {
+
+    return {
+      source:
+        "local",
+
+      id:
+        Number(
+          item
+        )
+    };
+  }
+
+
+  if (
+    item &&
+    typeof item ===
+      "object" &&
+    item.id !==
+      undefined
+  ) {
+
+    const source =
+      item.source ===
+        "tmdb"
+        ? "tmdb"
+        : "local";
+
+
+    return {
+      source,
+
+      id:
+        Number(
+          item.id
+        ),
+
+      movie:
+        source ===
+          "tmdb"
+          ? item.movie ||
+            null
+          : undefined
+    };
+  }
+
+
+  return null;
+}
+
+
 function loadMyList() {
 
   try {
@@ -168,11 +244,62 @@ function loadMyList() {
       );
 
 
-    return Array.isArray(
+    if (
+      !Array.isArray(
+        parsedList
+      )
+    ) {
+      return [];
+    }
+
+
+    const normalized =
       parsedList
-    )
-      ? parsedList
-      : [];
+        .map(
+          normalizeSavedItem
+        )
+        .filter(
+          Boolean
+        );
+
+
+    const uniqueItems =
+      [];
+
+
+    const usedKeys =
+      new Set();
+
+
+    normalized.forEach(
+      item => {
+
+        const key =
+          `${item.source}:${item.id}`;
+
+
+        if (
+          usedKeys.has(
+            key
+          )
+        ) {
+          return;
+        }
+
+
+        usedKeys.add(
+          key
+        );
+
+
+        uniqueItems.push(
+          item
+        );
+      }
+    );
+
+
+    return uniqueItems;
 
 
   } catch (error) {
@@ -181,6 +308,7 @@ function loadMyList() {
       "Erro ao carregar Minha Lista:",
       error
     );
+
 
     return [];
   }
@@ -209,37 +337,193 @@ function saveMyList() {
 }
 
 
-function isInMyList(
+function getListKey(
+  source,
   movieId
 ) {
 
-  return myList.includes(
-    movieId
+  return `${source}:${movieId}`;
+}
+
+
+function isInMyList(
+  movieId,
+  source = "local"
+) {
+
+  const key =
+    getListKey(
+      source,
+      movieId
+    );
+
+
+  return myList.some(
+    item =>
+      getListKey(
+        item.source,
+        item.id
+      ) === key
   );
 }
 
 
-function toggleMyList(
-  movieId
+function createTmdbSnapshot(
+  movie
 ) {
 
-  if (
-    isInMyList(
+  return {
+
+    id:
+      movie.id,
+
+    title:
+      movie.title,
+
+    originalTitle:
+      movie.originalTitle ||
+      null,
+
+    description:
+      movie.description ||
+      "Sinopse não disponível.",
+
+    releaseDate:
+      movie.releaseDate ||
+      null,
+
+    rating:
+      movie.rating || 0,
+
+    voteCount:
+      movie.voteCount || 0,
+
+    popularity:
+      movie.popularity || 0,
+
+    genres:
+      Array.isArray(
+        movie.genres
+      )
+        ? movie.genres
+        : [],
+
+    poster:
+      movie.poster ||
+      null,
+
+    backdrop:
+      movie.backdrop ||
+      null,
+
+    trailer:
+      movie.trailer ||
+      null,
+
+    trailerWatchUrl:
+      movie.trailerWatchUrl ||
+      null,
+
+    trailerName:
+      movie.trailerName ||
+      null,
+
+    trailerOfficial:
+      Boolean(
+        movie.trailerOfficial
+      ),
+
+    trailerLanguage:
+      movie.trailerLanguage ||
+      null,
+
+    source:
+      "tmdb"
+
+  };
+}
+
+
+function toggleMyList(
+  movie,
+  source = "local"
+) {
+
+  if (!movie) {
+    return;
+  }
+
+
+  const movieId =
+    Number(
+      movie.id
+    );
+
+
+  const key =
+    getListKey(
+      source,
       movieId
-    )
-  ) {
+    );
+
+
+  const exists =
+    myList.some(
+      item =>
+        getListKey(
+          item.source,
+          item.id
+        ) === key
+    );
+
+
+  if (exists) {
 
     myList =
       myList.filter(
-        id =>
-          id !== movieId
+        item =>
+          getListKey(
+            item.source,
+            item.id
+          ) !== key
       );
+
 
   } else {
 
-    myList.push(
-      movieId
-    );
+    if (
+      source ===
+        "tmdb"
+    ) {
+
+      myList.push({
+
+        source:
+          "tmdb",
+
+        id:
+          movieId,
+
+        movie:
+          createTmdbSnapshot(
+            movie
+          )
+
+      });
+
+
+    } else {
+
+      myList.push({
+
+        source:
+          "local",
+
+        id:
+          movieId
+
+      });
+    }
   }
 
 
@@ -313,6 +597,45 @@ function getTmdbMovieById(
 }
 
 
+function getSavedTmdbMovieById(
+  id
+) {
+
+  const savedItem =
+    myList.find(
+      item =>
+        item.source ===
+          "tmdb" &&
+        String(
+          item.id
+        ) === String(
+          id
+        )
+    );
+
+
+  return savedItem
+    ?.movie ||
+    null;
+}
+
+
+function getTmdbMovieFromAnySource(
+  id
+) {
+
+  return (
+    getTmdbMovieById(
+      id
+    ) ||
+    getSavedTmdbMovieById(
+      id
+    ) ||
+    null
+  );
+}
+
+
 function isTmdbMovie(
   movie
 ) {
@@ -328,7 +651,8 @@ function getTmdbGenres(
 
   if (
     !movie?.genres ||
-    movie.genres.length === 0
+    movie.genres.length ===
+      0
   ) {
 
     return "Cinema";
@@ -422,10 +746,18 @@ async function loadTmdbMovies() {
 
 
     tmdbMovies =
-      data.results;
+      data.results.map(
+        movie => ({
+          ...movie,
+          source:
+            "tmdb"
+        })
+      );
 
 
     renderFeaturedMovies();
+
+    renderMyList();
 
     initializeTmdbHero();
 
@@ -439,6 +771,8 @@ async function loadTmdbMovies() {
 
 
     renderFeaturedFallback();
+
+    renderMyList();
   }
 }
 
@@ -563,7 +897,8 @@ function initializeTmdbHero() {
 
 
   const sourceMovies =
-    moviesWithBackdrop.length >= 5
+    moviesWithBackdrop.length >=
+      5
       ? moviesWithBackdrop
       : tmdbMovies;
 
@@ -654,6 +989,7 @@ function renderHero() {
       movie
     );
 
+
   } else {
 
     renderLocalHero(
@@ -720,7 +1056,8 @@ function renderLocalHero(
 
 
   heroTrailerButton.dataset.trailer =
-    movie.trailer || "";
+    movie.trailer ||
+    "";
 
 
   heroDetailsButton.dataset.movieId =
@@ -762,6 +1099,7 @@ function renderTmdbHero(
         center / cover
         no-repeat
       `;
+
 
   } else {
 
@@ -822,13 +1160,16 @@ function renderTmdbHero(
     heroTrailerButton.style.display =
       "";
 
+
     heroTrailerButton.dataset.trailer =
       movie.trailer;
+
 
   } else {
 
     heroTrailerButton.style.display =
       "none";
+
 
     heroTrailerButton.dataset.trailer =
       "";
@@ -1074,7 +1415,8 @@ function createMovieCard(
 
   const saved =
     isInMyList(
-      movie.id
+      movie.id,
+      "local"
     );
 
 
@@ -1169,6 +1511,7 @@ function createMovieCard(
             ${movie.title}
           </h3>
 
+
           <div
             class="movie-card__meta"
           >
@@ -1217,6 +1560,7 @@ function createMovieCard(
 
           <button
             class="favorite-button ${saved ? "is-saved" : ""}"
+            data-source="local"
             data-movie-id="${movie.id}"
             title="Minha Lista"
             aria-label="Adicionar ou remover ${movie.title} da Minha Lista"
@@ -1243,6 +1587,7 @@ function createMovieCard(
           >
             ✕
           </button>
+
 
           <iframe
             src=""
@@ -1272,6 +1617,13 @@ function createTmdbMovieCard(
   const article =
     document.createElement(
       "article"
+    );
+
+
+  const saved =
+    isInMyList(
+      movie.id,
+      "tmdb"
     );
 
 
@@ -1355,6 +1707,7 @@ function createTmdbMovieCard(
             TMDB
           </span>
 
+
           <span
             class="movie-rating-badge"
           >
@@ -1419,6 +1772,7 @@ function createTmdbMovieCard(
 
           ${trailerButton}
 
+
           <button
             class="details-button"
             data-source="tmdb"
@@ -1427,6 +1781,17 @@ function createTmdbMovieCard(
             aria-label="Mais informações sobre ${movie.title}"
           >
             ⓘ
+          </button>
+
+
+          <button
+            class="favorite-button ${saved ? "is-saved" : ""}"
+            data-source="tmdb"
+            data-movie-id="${movie.id}"
+            title="Minha Lista"
+            aria-label="Adicionar ou remover ${movie.title} da Minha Lista"
+          >
+            ${saved ? "♥" : "♡"}
           </button>
 
         </div>
@@ -1451,6 +1816,7 @@ function createTmdbMovieCard(
                 >
                   ✕
                 </button>
+
 
                 <iframe
                   src=""
@@ -1587,17 +1953,67 @@ function renderMyList() {
   }
 
 
-  const savedMovies =
-    movies.filter(
-      movie =>
-        myList.includes(
-          movie.id
-        )
-    );
+  const resolvedItems =
+    myList
+      .map(
+        item => {
+
+          if (
+            item.source ===
+              "local"
+          ) {
+
+            const movie =
+              movies.find(
+                localMovie =>
+                  Number(
+                    localMovie.id
+                  ) === Number(
+                    item.id
+                  )
+              );
+
+
+            return movie
+              ? {
+                  source:
+                    "local",
+
+                  movie
+                }
+              : null;
+          }
+
+
+          const movie =
+            getTmdbMovieById(
+              item.id
+            ) ||
+            item.movie;
+
+
+          return movie
+            ? {
+                source:
+                  "tmdb",
+
+                movie: {
+                  ...movie,
+                  source:
+                    "tmdb"
+                }
+              }
+            : null;
+        }
+      )
+      .filter(
+        Boolean
+      );
 
 
   if (
-    savedMovies.length === 0
+    resolvedItems.length ===
+      0
   ) {
 
     const empty =
@@ -1631,6 +2047,7 @@ function renderMyList() {
       empty
     );
 
+
     return;
   }
 
@@ -1645,14 +2062,29 @@ function renderMyList() {
     "movie-grid my-list-grid";
 
 
-  savedMovies.forEach(
-    movie => {
+  resolvedItems.forEach(
+    item => {
 
-      grid.appendChild(
-        createMovieCard(
-          movie
-        )
-      );
+      if (
+        item.source ===
+          "tmdb"
+      ) {
+
+        grid.appendChild(
+          createTmdbMovieCard(
+            item.movie
+          )
+        );
+
+
+      } else {
+
+        grid.appendChild(
+          createMovieCard(
+            item.movie
+          )
+        );
+      }
     }
   );
 
@@ -1816,6 +2248,7 @@ function renderSearchResults(
         </div>
       `;
 
+
     return;
   }
 
@@ -1896,7 +2329,9 @@ function openTrailer(
 
 
   const separator =
-    trailerUrl.includes("?")
+    trailerUrl.includes(
+      "?"
+    )
       ? "&"
       : "?";
 
@@ -2208,7 +2643,8 @@ function openLocalDetails(
   trailerButton.dataset.watchUrl =
     getWatchUrl(
       movie
-    ) || "";
+    ) ||
+    "";
 
 
   const favoriteButton =
@@ -2225,8 +2661,13 @@ function openLocalDetails(
     movie.id;
 
 
+  favoriteButton.dataset.source =
+    "local";
+
+
   updateModalFavoriteButton(
-    movie.id
+    movie.id,
+    "local"
   );
 
 
@@ -2269,6 +2710,7 @@ function openTmdbDetails(
         center / cover
         no-repeat
       `;
+
 
   } else {
 
@@ -2339,7 +2781,8 @@ function openTmdbDetails(
   document.getElementById(
     "modalDescription"
   ).textContent =
-    movie.description;
+    movie.description ||
+    "Sinopse não disponível.";
 
 
   const trailerButton =
@@ -2355,31 +2798,55 @@ function openTmdbDetails(
     trailerButton.style.display =
       "";
 
+
     trailerButton.dataset.trailer =
       movie.trailer;
+
 
     trailerButton.dataset.watchUrl =
       getWatchUrl(
         movie
-      ) || "";
+      ) ||
+      "";
+
 
   } else {
 
     trailerButton.style.display =
       "none";
 
+
     trailerButton.dataset.trailer =
       "";
+
 
     trailerButton.dataset.watchUrl =
       "";
   }
 
 
-  document.getElementById(
-    "modalFavoriteButton"
-  ).style.display =
-    "none";
+  const favoriteButton =
+    document.getElementById(
+      "modalFavoriteButton"
+    );
+
+
+  favoriteButton.style.display =
+    "";
+
+
+  favoriteButton.dataset.movieId =
+    movie.id;
+
+
+  favoriteButton.dataset.source =
+    "tmdb";
+
+
+  updateModalFavoriteButton(
+    movie.id,
+    "tmdb"
+  );
 
 
   showDetailsModal();
@@ -2431,7 +2898,8 @@ function closeDetailsModal() {
 
 
 function updateModalFavoriteButton(
-  movieId
+  movieId,
+  source
 ) {
 
   const button =
@@ -2442,7 +2910,8 @@ function updateModalFavoriteButton(
 
   const saved =
     isInMyList(
-      movieId
+      movieId,
+      source
     );
 
 
@@ -2471,6 +2940,15 @@ function refreshInterface() {
 
 
   if (
+    tmdbMovies.length >
+      0
+  ) {
+
+    renderFeaturedMovies();
+  }
+
+
+  if (
     searchPanel.classList.contains(
       "is-open"
     )
@@ -2487,15 +2965,20 @@ function refreshInterface() {
 
 
   if (
-    modalButton?.dataset.movieId &&
+    modalButton
+      ?.dataset.movieId &&
     modalButton.style.display !==
       "none"
   ) {
 
     updateModalFavoriteButton(
       Number(
-        modalButton.dataset.movieId
-      )
+        modalButton
+          .dataset.movieId
+      ),
+      modalButton
+        .dataset.source ||
+        "local"
     );
   }
 }
@@ -2533,6 +3016,7 @@ heroDetailsButton.addEventListener(
       openTmdbDetails(
         movie
       );
+
 
     } else {
 
@@ -2667,8 +3151,10 @@ document.addEventListener(
 
       openTrailer(
         card,
-        trailerButton.dataset.trailer
+        trailerButton
+          .dataset.trailer
       );
+
 
       return;
     }
@@ -2688,6 +3174,7 @@ document.addEventListener(
         )
       );
 
+
       return;
     }
 
@@ -2701,20 +3188,22 @@ document.addEventListener(
     if (detailsButton) {
 
       const source =
-        detailsButton.dataset.source;
+        detailsButton
+          .dataset.source;
 
 
       const movieId =
-        detailsButton.dataset.movieId;
+        detailsButton
+          .dataset.movieId;
 
 
       if (
         source ===
-        "tmdb"
+          "tmdb"
       ) {
 
         const movie =
-          getTmdbMovieById(
+          getTmdbMovieFromAnySource(
             movieId
           );
 
@@ -2725,6 +3214,7 @@ document.addEventListener(
             movie
           );
         }
+
 
       } else {
 
@@ -2761,12 +3251,60 @@ document.addEventListener(
 
     if (favoriteButton) {
 
-      toggleMyList(
-        Number(
-          favoriteButton
-            .dataset.movieId
-        )
-      );
+      const source =
+        favoriteButton
+          .dataset.source ||
+        "local";
+
+
+      const movieId =
+        favoriteButton
+          .dataset.movieId;
+
+
+      if (
+        source ===
+          "tmdb"
+      ) {
+
+        const movie =
+          getTmdbMovieFromAnySource(
+            movieId
+          );
+
+
+        if (movie) {
+
+          toggleMyList(
+            movie,
+            "tmdb"
+          );
+        }
+
+
+      } else {
+
+        const movie =
+          movies.find(
+            item =>
+              String(
+                item.id
+              ) ===
+              String(
+                movieId
+              )
+          );
+
+
+        if (movie) {
+
+          toggleMyList(
+            movie,
+            "local"
+          );
+        }
+      }
+
 
       return;
     }
@@ -2780,16 +3318,65 @@ document.addEventListener(
 
     if (
       modalFavorite &&
-      modalFavorite.style.display !==
+      modalFavorite
+        .style.display !==
         "none"
     ) {
 
-      toggleMyList(
-        Number(
-          modalFavorite
-            .dataset.movieId
-        )
-      );
+      const source =
+        modalFavorite
+          .dataset.source ||
+        "local";
+
+
+      const movieId =
+        modalFavorite
+          .dataset.movieId;
+
+
+      if (
+        source ===
+          "tmdb"
+      ) {
+
+        const movie =
+          getTmdbMovieFromAnySource(
+            movieId
+          );
+
+
+        if (movie) {
+
+          toggleMyList(
+            movie,
+            "tmdb"
+          );
+        }
+
+
+      } else {
+
+        const movie =
+          movies.find(
+            item =>
+              String(
+                item.id
+              ) ===
+              String(
+                movieId
+              )
+          );
+
+
+        if (movie) {
+
+          toggleMyList(
+            movie,
+            "local"
+          );
+        }
+      }
+
 
       return;
     }
@@ -2818,12 +3405,14 @@ document.addEventListener(
 
     if (
       modalTrailer &&
-      modalTrailer.style.display !==
+      modalTrailer
+        .style.display !==
         "none"
     ) {
 
       const watchUrl =
-        modalTrailer.dataset.watchUrl;
+        modalTrailer
+          .dataset.watchUrl;
 
 
       if (watchUrl) {
@@ -2834,12 +3423,14 @@ document.addEventListener(
           "noopener,noreferrer"
         );
 
+
         return;
       }
 
 
       const trailer =
-        modalTrailer.dataset.trailer;
+        modalTrailer
+          .dataset.trailer;
 
 
       if (trailer) {
@@ -2952,6 +3543,7 @@ document.addEventListener(
     ) {
 
       stopHeroAutoplay();
+
 
     } else {
 
