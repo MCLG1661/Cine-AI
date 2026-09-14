@@ -148,6 +148,7 @@ let heroTimer =
 ====================================================== */
 
 function loadMyList() {
+
   try {
 
     const storedList =
@@ -187,6 +188,7 @@ function loadMyList() {
 
 
 function saveMyList() {
+
   try {
 
     localStorage.setItem(
@@ -210,6 +212,7 @@ function saveMyList() {
 function isInMyList(
   movieId
 ) {
+
   return myList.includes(
     movieId
   );
@@ -310,6 +313,39 @@ function getTmdbMovieById(
 }
 
 
+function isTmdbMovie(
+  movie
+) {
+
+  return movie?.source ===
+    "tmdb";
+}
+
+
+function getTmdbGenres(
+  movie
+) {
+
+  if (
+    !movie?.genres ||
+    movie.genres.length === 0
+  ) {
+
+    return "Cinema";
+  }
+
+
+  return movie.genres
+    .slice(
+      0,
+      3
+    )
+    .join(
+      " • "
+    );
+}
+
+
 /* ======================================================
    TMDB
 ====================================================== */
@@ -335,6 +371,7 @@ async function loadTmdbMovies() {
 
 
     if (!response.ok) {
+
       throw new Error(
         `API respondeu com status ${response.status}`
       );
@@ -350,6 +387,7 @@ async function loadTmdbMovies() {
         data.results
       )
     ) {
+
       throw new Error(
         "Formato inesperado da API"
       );
@@ -361,6 +399,8 @@ async function loadTmdbMovies() {
 
 
     renderFeaturedMovies();
+
+    initializeTmdbHero();
 
 
   } catch (error) {
@@ -430,16 +470,24 @@ function renderFeaturedFallback() {
 
 
 /* ======================================================
-   HERO
+   HERO LOCAL — FALLBACK
 ====================================================== */
 
 function initializeHero() {
 
   heroMovies =
-    movies.filter(
-      movie =>
-        movie.featured
-    );
+    movies
+      .filter(
+        movie =>
+          movie.featured
+      )
+      .map(
+        movie => ({
+          ...movie,
+          source:
+            "local"
+        })
+      );
 
 
   if (
@@ -447,11 +495,23 @@ function initializeHero() {
   ) {
 
     heroMovies =
-      movies.slice(
-        0,
-        4
-      );
+      movies
+        .slice(
+          0,
+          4
+        )
+        .map(
+          movie => ({
+            ...movie,
+            source:
+              "local"
+          })
+        );
   }
+
+
+  currentHeroIndex =
+    0;
 
 
   renderHeroIndicators();
@@ -459,6 +519,59 @@ function initializeHero() {
   renderHero();
 
   startHeroAutoplay();
+}
+
+
+/* ======================================================
+   HERO TMDB
+====================================================== */
+
+function initializeTmdbHero() {
+
+  const moviesWithBackdrop =
+    tmdbMovies.filter(
+      movie =>
+        movie.backdrop
+    );
+
+
+  const sourceMovies =
+    moviesWithBackdrop.length >= 5
+      ? moviesWithBackdrop
+      : tmdbMovies;
+
+
+  if (
+    sourceMovies.length === 0
+  ) {
+    return;
+  }
+
+
+  heroMovies =
+    sourceMovies
+      .slice(
+        0,
+        5
+      )
+      .map(
+        movie => ({
+          ...movie,
+          source:
+            "tmdb"
+        })
+      );
+
+
+  currentHeroIndex =
+    0;
+
+
+  renderHeroIndicators();
+
+  renderHero();
+
+  restartHeroAutoplay();
 }
 
 
@@ -472,6 +585,10 @@ function getCurrentHeroMovie() {
   );
 }
 
+
+/* ======================================================
+   RENDER DO HERO
+====================================================== */
 
 function renderHero() {
 
@@ -499,6 +616,32 @@ function renderHero() {
     "hero--changing"
   );
 
+
+  if (
+    isTmdbMovie(
+      movie
+    )
+  ) {
+
+    renderTmdbHero(
+      movie
+    );
+
+  } else {
+
+    renderLocalHero(
+      movie
+    );
+  }
+
+
+  updateHeroIndicators();
+}
+
+
+function renderLocalHero(
+  movie
+) {
 
   hero.style.background =
     `
@@ -545,17 +688,131 @@ function renderHero() {
     movie.description;
 
 
+  heroTrailerButton.style.display =
+    "";
+
+
   heroTrailerButton.dataset.trailer =
-    movie.trailer;
+    movie.trailer || "";
 
 
   heroDetailsButton.dataset.movieId =
     movie.id;
 
 
-  updateHeroIndicators();
+  heroDetailsButton.dataset.source =
+    "local";
 }
 
+
+function renderTmdbHero(
+  movie
+) {
+
+  const heroImage =
+    movie.backdrop ||
+    movie.poster;
+
+
+  if (heroImage) {
+
+    hero.style.background =
+      `
+        linear-gradient(
+          to right,
+          rgba(8, 11, 18, 0.98) 4%,
+          rgba(8, 11, 18, 0.90) 31%,
+          rgba(8, 11, 18, 0.58) 57%,
+          rgba(8, 11, 18, 0.28) 78%,
+          rgba(8, 11, 18, 0.66) 100%
+        ),
+        linear-gradient(
+          to top,
+          rgba(8, 11, 18, 0.95) 0%,
+          rgba(8, 11, 18, 0.12) 45%
+        ),
+        url("${heroImage}")
+        center / cover
+        no-repeat
+      `;
+
+  } else {
+
+    hero.style.background =
+      `
+        linear-gradient(
+          135deg,
+          #080b12,
+          #312e81,
+          #0f766e
+        )
+      `;
+  }
+
+
+  heroBadge.textContent =
+    "Filme em alta • TMDB";
+
+
+  heroTitle.textContent =
+    movie.title;
+
+
+  heroMeta.innerHTML =
+    `
+      <span>
+        ${getYearFromDate(
+          movie.releaseDate
+        )}
+      </span>
+
+      <span>
+        ${getTmdbGenres(
+          movie
+        )}
+      </span>
+
+      <span>
+        ⭐ ${movie.rating}
+      </span>
+
+      <span>
+        ${movie.voteCount || 0}
+        avaliações
+      </span>
+    `;
+
+
+  heroDescription.textContent =
+    movie.description ||
+    "Sinopse não disponível.";
+
+
+  /*
+    Trailers reais do TMDB serão
+    integrados em uma etapa posterior.
+  */
+
+  heroTrailerButton.style.display =
+    "none";
+
+
+  heroTrailerButton.dataset.trailer =
+    "";
+
+
+  heroDetailsButton.dataset.movieId =
+    movie.id;
+
+
+  heroDetailsButton.dataset.source =
+    "tmdb";
+}
+
+
+/* ======================================================
+   INDICADORES DO HERO
+====================================================== */
 
 function renderHeroIndicators() {
 
@@ -623,6 +880,10 @@ function updateHeroIndicators() {
     );
 }
 
+
+/* ======================================================
+   NAVEGAÇÃO DO HERO
+====================================================== */
 
 function showNextHero() {
 
@@ -741,6 +1002,9 @@ function openHeroTrailer() {
 
   if (
     !movie ||
+    isTmdbMovie(
+      movie
+    ) ||
     !movie.trailer
   ) {
     return;
@@ -1337,7 +1601,9 @@ function openSearch() {
 
   setTimeout(
     () => {
+
       searchInput.focus();
+
     },
     100
   );
@@ -2095,7 +2361,9 @@ function refreshInterface() {
 
 
   if (
-    modalButton?.dataset.movieId
+    modalButton?.dataset.movieId &&
+    modalButton.style.display !==
+      "none"
   ) {
 
     updateModalFavoriteButton(
@@ -2125,7 +2393,23 @@ heroDetailsButton.addEventListener(
       getCurrentHeroMovie();
 
 
-    if (movie) {
+    if (!movie) {
+      return;
+    }
+
+
+    if (
+      isTmdbMovie(
+        movie
+      )
+    ) {
+
+      openTmdbDetails(
+        movie
+      );
+
+    } else {
+
       openLocalDetails(
         movie
       );
@@ -2299,7 +2583,8 @@ document.addEventListener(
 
 
       if (
-        source === "tmdb"
+        source ===
+        "tmdb"
       ) {
 
         const movie =
@@ -2309,6 +2594,7 @@ document.addEventListener(
 
 
         if (movie) {
+
           openTmdbDetails(
             movie
           );
@@ -2329,6 +2615,7 @@ document.addEventListener(
 
 
         if (movie) {
+
           openLocalDetails(
             movie
           );
@@ -2544,6 +2831,20 @@ renderSearchResults(
   movies
 );
 
+
+/*
+  Primeiro carregamos o Hero local.
+  Ele funciona como fallback caso
+  a API TMDB não responda.
+*/
+
 initializeHero();
+
+
+/*
+  Quando o TMDB responder,
+  os filmes reais substituem
+  automaticamente o Hero local.
+*/
 
 loadTmdbMovies();
