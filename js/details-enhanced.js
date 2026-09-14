@@ -119,7 +119,7 @@
       item.originalTitle &&
       item.originalTitle !== item.title
         ? item.originalTitle
-        : "—";
+        : null;
 
     container.innerHTML = `
       <div class="details-extra__grid">
@@ -169,7 +169,7 @@
       </div>
 
       ${
-        originalTitle !== "—"
+        originalTitle
           ? `
             <div class="details-extra__original">
               <span>
@@ -255,7 +255,7 @@
           </strong>
         </div>
 
-        <div class="details-extra__item details-extra__item--wide">
+        <div class="details-extra__item">
           <span>Gênero</span>
           <strong>
             ${item.genre || "—"}
@@ -267,43 +267,23 @@
   }
 
   const originalOpenTmdbDetails =
-    window.openTmdbDetails;
+    openTmdbDetails;
 
-  if (
-    typeof originalOpenTmdbDetails ===
-    "function"
-  ) {
-    window.openTmdbDetails =
-      function (item) {
-        originalOpenTmdbDetails(item);
+  openTmdbDetails =
+    function (item) {
+      originalOpenTmdbDetails(item);
 
-        renderTmdbExtraDetails(
-          item
-        );
-      };
-
-    openTmdbDetails =
-      window.openTmdbDetails;
-  }
+      renderTmdbExtraDetails(item);
+    };
 
   const originalOpenLocalDetails =
-    window.openLocalDetails;
+    openLocalDetails;
 
-  if (
-    typeof originalOpenLocalDetails ===
-    "function"
-  ) {
-    window.openLocalDetails =
-      function (item) {
-        originalOpenLocalDetails(item);
+  openLocalDetails =
+    function (item) {
+      originalOpenLocalDetails(item);
 
-        renderLocalExtraDetails(
-          item
-        );
-      };
-
-    openLocalDetails =
-      window.openLocalDetails;
-  }
+      renderLocalExtraDetails(item);
+    };
 
 })();
