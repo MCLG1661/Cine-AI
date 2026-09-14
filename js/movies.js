@@ -1,137 +1,573 @@
-const movies = [
-  { 
-    id: 1,
-    title: "Horizonte Infinito",
-    year: 2026,
-    type: "movie",
-    genre: "Ficção Científica",
-    rating: 8.7,
-    duration: "2h 08min",
-    description:
-      "Uma missão espacial experimental encontra sinais de uma civilização desconhecida além dos limites explorados pela humanidade.",
-    icon: "🚀",
-    posterGradient:
-      "linear-gradient(135deg, #111827 0%, #312e81 45%, #0f766e 100%)",
-    trailer: "https://www.youtube.com/embed/Scxs7L0vhZ4",
-    featured: true
-  },
+const TMDB_BASE_URL =
+  "https://api.themoviedb.org/3";
 
-  {
-    id: 2,
-    title: "Última Conexão",
-    year: 2026,
-    type: "movie",
-    genre: "Drama",
-    rating: 8.4,
-    duration: "1h 54min",
-    description:
-      "Dois desconhecidos conectados por uma plataforma digital descobrem que suas histórias estão mais próximas do que imaginavam.",
-    icon: "🌃",
-    posterGradient:
-      "linear-gradient(135deg, #111827 0%, #7c2d12 50%, #831843 100%)",
-    trailer: "https://www.youtube.com/embed/Way9Dexny3w",
-    featured: true
-  },
+const TMDB_IMAGE_URL =
+  "https://image.tmdb.org/t/p";
 
-  {
-    id: 3,
-    title: "Além do Código",
-    year: 2026,
-    type: "movie",
-    genre: "Sci-Fi",
-    rating: 9.1,
-    duration: "2h 15min",
-    description:
-      "Uma equipe de pesquisadores desenvolve uma inteligência artificial capaz de aprender emoções humanas, alterando o equilíbrio entre tecnologia e sociedade.",
-    icon: "🤖",
-    posterGradient:
-      "linear-gradient(135deg, #0f172a 0%, #4338ca 45%, #0891b2 100%)",
-    trailer: "https://www.youtube.com/embed/uYPbbksJxIg",
-    featured: true
-  },
+const TRAILER_MOVIES_LIMIT =
+  10;
 
-  {
-    id: 4,
-    title: "Universo Paralelo",
-    year: 2025,
-    type: "movie",
-    genre: "Aventura",
-    rating: 8.8,
-    duration: "2h 03min",
-    description:
-      "Após um experimento científico, um grupo de pesquisadores descobre uma realidade paralela onde decisões diferentes criaram um novo mundo.",
-    icon: "🌌",
-    posterGradient:
-      "linear-gradient(135deg, #020617 0%, #581c87 45%, #164e63 100%)",
-    trailer: "https://www.youtube.com/embed/5PSNL1qE6VY",
-    featured: true
-  },
 
-  {
-    id: 5,
-    title: "Cidade Invisível",
-    year: 2026,
-    type: "series",
-    genre: "Mistério",
-    rating: 8.6,
-    duration: "8 episódios",
-    description:
-      "Uma investigação aparentemente comum revela uma rede de acontecimentos que conecta tecnologia, memória e segredos urbanos.",
-    icon: "🌆",
-    posterGradient:
-      "linear-gradient(135deg, #111827 0%, #334155 45%, #115e59 100%)",
-    trailer: "https://www.youtube.com/embed/FtZ_Zat3Ag8",
-    featured: false
-  },
+/* ======================================================
+   CORS
+====================================================== */
 
-  {
-    id: 6,
-    title: "Código Zero",
-    year: 2026,
-    type: "series",
-    genre: "Tecnologia",
-    rating: 9.0,
-    duration: "10 episódios",
-    description:
-      "Um especialista em segurança digital descobre uma vulnerabilidade capaz de comprometer infraestruturas de todo o planeta.",
-    icon: "💻",
-    posterGradient:
-      "linear-gradient(135deg, #020617 0%, #1d4ed8 45%, #047857 100%)",
-    trailer: "https://www.youtube.com/embed/32RAq6JzY-w",
-    featured: false
-  },
+function setCorsHeaders(
+  response
+) {
 
-  {
-    id: 7,
-    title: "Depois da Meia-Noite",
-    year: 2025,
-    type: "series",
-    genre: "Suspense",
-    rating: 8.5,
-    duration: "6 episódios",
-    description:
-      "Todas as noites, exatamente à meia-noite, moradores de uma cidade recebem mensagens que parecem prever acontecimentos futuros.",
-    icon: "🌙",
-    posterGradient:
-      "linear-gradient(135deg, #020617 0%, #312e81 45%, #701a75 100%)",
-    trailer: "https://www.youtube.com/embed/EXeTwQWrcwY",
-    featured: false
-  },
+  response.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
 
-  {
-    id: 8,
-    title: "Fronteiras",
-    year: 2026,
-    type: "series",
-    genre: "Drama",
-    rating: 8.9,
-    duration: "8 episódios",
-    description:
-      "Pessoas de diferentes países têm suas trajetórias conectadas por decisões políticas, tecnologia e transformações sociais.",
-    icon: "🌍",
-    posterGradient:
-      "linear-gradient(135deg, #172554 0%, #1e40af 45%, #0f766e 100%)",
-    trailer: "https://www.youtube.com/embed/6ZfuNTqbHE8",
-    featured: false
+  response.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, OPTIONS"
+  );
+
+  response.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type"
+  );
+}
+
+
+/* ======================================================
+   SELEÇÃO DE TRAILER
+====================================================== */
+
+function selectBestTrailer(
+  videos = []
+) {
+
+  const youtubeVideos =
+    videos.filter(
+      video =>
+        video.site ===
+          "YouTube" &&
+        video.key
+    );
+
+
+  if (
+    youtubeVideos.length === 0
+  ) {
+
+    return null;
   }
-];
+
+
+  const officialTrailers =
+    youtubeVideos.filter(
+      video =>
+        video.type ===
+          "Trailer" &&
+        video.official
+    );
+
+
+  const trailers =
+    youtubeVideos.filter(
+      video =>
+        video.type ===
+          "Trailer"
+    );
+
+
+  const officialTeasers =
+    youtubeVideos.filter(
+      video =>
+        video.type ===
+          "Teaser" &&
+        video.official
+    );
+
+
+  const teasers =
+    youtubeVideos.filter(
+      video =>
+        video.type ===
+          "Teaser"
+    );
+
+
+  const selected =
+    officialTrailers[0] ||
+    trailers[0] ||
+    officialTeasers[0] ||
+    teasers[0] ||
+    youtubeVideos[0];
+
+
+  if (!selected) {
+    return null;
+  }
+
+
+  return {
+    id:
+      selected.id || null,
+
+    name:
+      selected.name ||
+      "Trailer",
+
+    key:
+      selected.key,
+
+    site:
+      selected.site,
+
+    type:
+      selected.type,
+
+    official:
+      Boolean(
+        selected.official
+      ),
+
+    language:
+      selected.iso_639_1 ||
+      null,
+
+    country:
+      selected.iso_3166_1 ||
+      null,
+
+    publishedAt:
+      selected.published_at ||
+      null,
+
+    embedUrl:
+      `https://www.youtube.com/embed/${selected.key}`,
+
+    watchUrl:
+      `https://www.youtube.com/watch?v=${selected.key}`
+  };
+}
+
+
+/* ======================================================
+   BUSCA DE TRAILER
+====================================================== */
+
+async function fetchMovieTrailer(
+  movieId,
+  headers
+) {
+
+  try {
+
+    const ptResponse =
+      await fetch(
+        `${TMDB_BASE_URL}/movie/${movieId}/videos?language=pt-BR`,
+        {
+          headers
+        }
+      );
+
+
+    if (ptResponse.ok) {
+
+      const ptData =
+        await ptResponse.json();
+
+
+      const ptTrailer =
+        selectBestTrailer(
+          ptData.results || []
+        );
+
+
+      if (ptTrailer) {
+
+        return ptTrailer;
+      }
+    }
+
+
+    const enResponse =
+      await fetch(
+        `${TMDB_BASE_URL}/movie/${movieId}/videos?language=en-US`,
+        {
+          headers
+        }
+      );
+
+
+    if (!enResponse.ok) {
+
+      return null;
+    }
+
+
+    const enData =
+      await enResponse.json();
+
+
+    return selectBestTrailer(
+      enData.results || []
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      `Erro ao consultar trailer do filme ${movieId}:`,
+      error
+    );
+
+
+    return null;
+  }
+}
+
+
+/* ======================================================
+   HANDLER
+====================================================== */
+
+export default async function handler(
+  request,
+  response
+) {
+
+  setCorsHeaders(
+    response
+  );
+
+
+  if (
+    request.method ===
+      "OPTIONS"
+  ) {
+
+    return response
+      .status(204)
+      .end();
+  }
+
+
+  if (
+    request.method !==
+      "GET"
+  ) {
+
+    return response
+      .status(405)
+      .json({
+        error:
+          "Método não permitido"
+      });
+  }
+
+
+  const token =
+    process.env.TMDB_TOKEN;
+
+
+  if (!token) {
+
+    return response
+      .status(500)
+      .json({
+        error:
+          "TMDB_TOKEN não configurado"
+      });
+  }
+
+
+  const headers = {
+
+    Authorization:
+      `Bearer ${token}`,
+
+    Accept:
+      "application/json"
+
+  };
+
+
+  try {
+
+    const [
+      trendingResponse,
+      genresResponse
+    ] =
+      await Promise.all([
+
+        fetch(
+          `${TMDB_BASE_URL}/trending/movie/week?language=pt-BR`,
+          {
+            headers
+          }
+        ),
+
+        fetch(
+          `${TMDB_BASE_URL}/genre/movie/list?language=pt-BR`,
+          {
+            headers
+          }
+        )
+
+      ]);
+
+
+    if (
+      !trendingResponse.ok
+    ) {
+
+      const errorData =
+        await trendingResponse.text();
+
+
+      console.error(
+        "Erro TMDB Trending:",
+        trendingResponse.status,
+        errorData
+      );
+
+
+      return response
+        .status(
+          trendingResponse.status
+        )
+        .json({
+          error:
+            "Erro ao consultar filmes em alta"
+        });
+    }
+
+
+    if (
+      !genresResponse.ok
+    ) {
+
+      const errorData =
+        await genresResponse.text();
+
+
+      console.error(
+        "Erro TMDB Genres:",
+        genresResponse.status,
+        errorData
+      );
+
+
+      return response
+        .status(
+          genresResponse.status
+        )
+        .json({
+          error:
+            "Erro ao consultar gêneros"
+        });
+    }
+
+
+    const trendingData =
+      await trendingResponse.json();
+
+
+    const genresData =
+      await genresResponse.json();
+
+
+    const genreMap =
+      Object.fromEntries(
+        genresData.genres.map(
+          genre => [
+            genre.id,
+            genre.name
+          ]
+        )
+      );
+
+
+    /*
+      Buscamos trailers somente para
+      os primeiros filmes utilizados
+      pelo Hero e pelos cards principais.
+
+      Isso evita dezenas de requisições
+      desnecessárias ao TMDB.
+    */
+
+    const moviesForTrailers =
+      trendingData.results.slice(
+        0,
+        TRAILER_MOVIES_LIMIT
+      );
+
+
+    const trailers =
+      await Promise.all(
+        moviesForTrailers.map(
+          movie =>
+            fetchMovieTrailer(
+              movie.id,
+              headers
+            )
+        )
+      );
+
+
+    const trailerMap =
+      new Map();
+
+
+    moviesForTrailers.forEach(
+      (
+        movie,
+        index
+      ) => {
+
+        trailerMap.set(
+          movie.id,
+          trailers[index] ||
+          null
+        );
+      }
+    );
+
+
+    const movies =
+      trendingData.results.map(
+        movie => {
+
+          const trailer =
+            trailerMap.get(
+              movie.id
+            ) || null;
+
+
+          return {
+
+            id:
+              movie.id,
+
+            title:
+              movie.title,
+
+            originalTitle:
+              movie.original_title,
+
+            description:
+              movie.overview ||
+              "Sinopse não disponível.",
+
+            releaseDate:
+              movie.release_date ||
+              null,
+
+            rating:
+              Number(
+                movie.vote_average
+                  ?.toFixed(1)
+              ) || 0,
+
+            voteCount:
+              movie.vote_count ||
+              0,
+
+            popularity:
+              movie.popularity ||
+              0,
+
+            genres:
+              (
+                movie.genre_ids ||
+                []
+              )
+                .map(
+                  genreId =>
+                    genreMap[
+                      genreId
+                    ]
+                )
+                .filter(
+                  Boolean
+                ),
+
+            poster:
+              movie.poster_path
+                ? `${TMDB_IMAGE_URL}/w500${movie.poster_path}`
+                : null,
+
+            backdrop:
+              movie.backdrop_path
+                ? `${TMDB_IMAGE_URL}/original${movie.backdrop_path}`
+                : null,
+
+            trailer:
+              trailer
+                ?.embedUrl ||
+              null,
+
+            trailerWatchUrl:
+              trailer
+                ?.watchUrl ||
+              null,
+
+            trailerName:
+              trailer
+                ?.name ||
+              null,
+
+            trailerOfficial:
+              trailer
+                ?.official ||
+              false,
+
+            trailerLanguage:
+              trailer
+                ?.language ||
+              null
+
+          };
+        }
+      );
+
+
+    return response
+      .status(200)
+      .json({
+
+        source:
+          "TMDB",
+
+        period:
+          "week",
+
+        count:
+          movies.length,
+
+        trailersEnriched:
+          movies.filter(
+            movie =>
+              movie.trailer
+          ).length,
+
+        results:
+          movies
+
+      });
+
+
+  } catch (error) {
+
+    console.error(
+      "Erro interno:",
+      error
+    );
+
+
+    return response
+      .status(500)
+      .json({
+        error:
+          "Erro interno ao consultar filmes"
+      });
+  }
+}
