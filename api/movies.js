@@ -7,6 +7,9 @@ const TMDB_IMAGE_URL =
 const TRAILER_MOVIES_LIMIT =
   10;
 
+const SEARCH_TRAILER_LIMIT =
+  8;
+
 
 /* ======================================================
    CORS
@@ -106,8 +109,10 @@ function selectBestTrailer(
 
 
   return {
+
     id:
-      selected.id || null,
+      selected.id ||
+      null,
 
     name:
       selected.name ||
@@ -144,6 +149,7 @@ function selectBestTrailer(
 
     watchUrl:
       `https://www.youtube.com/watch?v=${selected.key}`
+
   };
 }
 
@@ -176,7 +182,8 @@ async function fetchMovieTrailer(
 
       const ptTrailer =
         selectBestTrailer(
-          ptData.results || []
+          ptData.results ||
+          []
         );
 
 
@@ -207,7 +214,8 @@ async function fetchMovieTrailer(
 
 
     return selectBestTrailer(
-      enData.results || []
+      enData.results ||
+      []
     );
 
 
@@ -221,6 +229,167 @@ async function fetchMovieTrailer(
 
     return null;
   }
+}
+
+
+/* ======================================================
+   MAPEAMENTO DE FILMES
+====================================================== */
+
+function mapMovie(
+  movie,
+  genreMap,
+  trailer = null
+) {
+
+  return {
+
+    id:
+      movie.id,
+
+    title:
+      movie.title,
+
+    originalTitle:
+      movie.original_title,
+
+    description:
+      movie.overview ||
+      "Sinopse não disponível.",
+
+    releaseDate:
+      movie.release_date ||
+      null,
+
+    rating:
+      Number(
+        movie.vote_average
+          ?.toFixed(1)
+      ) ||
+      0,
+
+    voteCount:
+      movie.vote_count ||
+      0,
+
+    popularity:
+      movie.popularity ||
+      0,
+
+    genres:
+      (
+        movie.genre_ids ||
+        []
+      )
+        .map(
+          genreId =>
+            genreMap[
+              genreId
+            ]
+        )
+        .filter(
+          Boolean
+        ),
+
+    poster:
+      movie.poster_path
+        ? `${TMDB_IMAGE_URL}/w500${movie.poster_path}`
+        : null,
+
+    backdrop:
+      movie.backdrop_path
+        ? `${TMDB_IMAGE_URL}/original${movie.backdrop_path}`
+        : null,
+
+    trailer:
+      trailer
+        ?.embedUrl ||
+      null,
+
+    trailerWatchUrl:
+      trailer
+        ?.watchUrl ||
+      null,
+
+    trailerName:
+      trailer
+        ?.name ||
+      null,
+
+    trailerOfficial:
+      trailer
+        ?.official ||
+      false,
+
+    trailerLanguage:
+      trailer
+        ?.language ||
+      null
+
+  };
+}
+
+
+/* ======================================================
+   ENRIQUECIMENTO DE TRAILERS
+====================================================== */
+
+async function enrichMoviesWithTrailers(
+  sourceMovies,
+  genreMap,
+  headers,
+  limit
+) {
+
+  const moviesForTrailers =
+    sourceMovies.slice(
+      0,
+      limit
+    );
+
+
+  const trailers =
+    await Promise.all(
+      moviesForTrailers.map(
+        movie =>
+          fetchMovieTrailer(
+            movie.id,
+            headers
+          )
+      )
+    );
+
+
+  const trailerMap =
+    new Map();
+
+
+  moviesForTrailers.forEach(
+    (
+      movie,
+      index
+    ) => {
+
+      trailerMap.set(
+        movie.id,
+        trailers[index] ||
+        null
+      );
+    }
+  );
+
+
+  return sourceMovies.map(
+    movie =>
+      mapMovie(
+        movie,
+        genreMap,
+        trailerMap.get(
+          movie.id
+        ) ||
+        null
+      )
+  );
 }
 
 
@@ -291,53 +460,33 @@ export default async function handler(
 
   try {
 
-    const [
-      trendingResponse,
-      genresResponse
-    ] =
-      await Promise.all([
-
-        fetch(
-          `${TMDB_BASE_URL}/trending/movie/week?language=pt-BR`,
-          {
-            headers
-          }
-        ),
-
-        fetch(
-          `${TMDB_BASE_URL}/genre/movie/list?language=pt-BR`,
-          {
-            headers
-          }
-        )
-
-      ]);
+    const rawQuery =
+      Array.isArray(
+        request.query?.q
+      )
+        ? request.query.q[0]
+        : request.query?.q;
 
 
-    if (
-      !trendingResponse.ok
-    ) {
+    const searchQuery =
+      String(
+        rawQuery ||
+        ""
+      )
+        .trim()
+        .slice(
+          0,
+          100
+        );
 
-      const errorData =
-        await trendingResponse.text();
 
-
-      console.error(
-        "Erro TMDB Trending:",
-        trendingResponse.status,
-        errorData
+    const genresResponse =
+      await fetch(
+        `${TMDB_BASE_URL}/genre/movie/list?language=pt-BR`,
+        {
+          headers
+        }
       );
-
-
-      return response
-        .status(
-          trendingResponse.status
-        )
-        .json({
-          error:
-            "Erro ao consultar filmes em alta"
-        });
-    }
 
 
     if (
@@ -366,10 +515,6 @@ export default async function handler(
     }
 
 
-    const trendingData =
-      await trendingResponse.json();
-
-
     const genresData =
       await genresResponse.json();
 
@@ -385,148 +530,202 @@ export default async function handler(
       );
 
 
-    /*
-      Buscamos trailers somente para
-      os primeiros filmes utilizados
-      pelo Hero e pelos cards principais.
+    /* ==================================================
+       MODO BUSCA
+    ================================================== */
 
-      Isso evita dezenas de requisições
-      desnecessárias ao TMDB.
-    */
+    if (searchQuery) {
 
-    const moviesForTrailers =
-      trendingData.results.slice(
-        0,
-        TRAILER_MOVIES_LIMIT
-      );
-
-
-    const trailers =
-      await Promise.all(
-        moviesForTrailers.map(
-          movie =>
-            fetchMovieTrailer(
-              movie.id,
-              headers
-            )
-        )
-      );
-
-
-    const trailerMap =
-      new Map();
-
-
-    moviesForTrailers.forEach(
-      (
-        movie,
-        index
-      ) => {
-
-        trailerMap.set(
-          movie.id,
-          trailers[index] ||
-          null
+      const searchUrl =
+        new URL(
+          `${TMDB_BASE_URL}/search/movie`
         );
+
+
+      searchUrl.searchParams.set(
+        "query",
+        searchQuery
+      );
+
+
+      searchUrl.searchParams.set(
+        "language",
+        "pt-BR"
+      );
+
+
+      searchUrl.searchParams.set(
+        "region",
+        "BR"
+      );
+
+
+      searchUrl.searchParams.set(
+        "include_adult",
+        "false"
+      );
+
+
+      searchUrl.searchParams.set(
+        "page",
+        "1"
+      );
+
+
+      const searchResponse =
+        await fetch(
+          searchUrl,
+          {
+            headers
+          }
+        );
+
+
+      if (
+        !searchResponse.ok
+      ) {
+
+        const errorData =
+          await searchResponse.text();
+
+
+        console.error(
+          "Erro TMDB Search:",
+          searchResponse.status,
+          errorData
+        );
+
+
+        return response
+          .status(
+            searchResponse.status
+          )
+          .json({
+            error:
+              "Erro ao pesquisar filmes"
+          });
       }
-    );
+
+
+      const searchData =
+        await searchResponse.json();
+
+
+      const sourceMovies =
+        Array.isArray(
+          searchData.results
+        )
+          ? searchData.results
+          : [];
+
+
+      const movies =
+        await enrichMoviesWithTrailers(
+          sourceMovies,
+          genreMap,
+          headers,
+          SEARCH_TRAILER_LIMIT
+        );
+
+
+      return response
+        .status(200)
+        .json({
+
+          source:
+            "TMDB",
+
+          mode:
+            "search",
+
+          query:
+            searchQuery,
+
+          page:
+            searchData.page ||
+            1,
+
+          totalPages:
+            searchData.total_pages ||
+            0,
+
+          totalResults:
+            searchData.total_results ||
+            movies.length,
+
+          count:
+            movies.length,
+
+          trailersEnriched:
+            movies.filter(
+              movie =>
+                movie.trailer
+            ).length,
+
+          results:
+            movies
+
+        });
+    }
+
+
+    /* ==================================================
+       MODO EM ALTA
+    ================================================== */
+
+    const trendingResponse =
+      await fetch(
+        `${TMDB_BASE_URL}/trending/movie/week?language=pt-BR`,
+        {
+          headers
+        }
+      );
+
+
+    if (
+      !trendingResponse.ok
+    ) {
+
+      const errorData =
+        await trendingResponse.text();
+
+
+      console.error(
+        "Erro TMDB Trending:",
+        trendingResponse.status,
+        errorData
+      );
+
+
+      return response
+        .status(
+          trendingResponse.status
+        )
+        .json({
+          error:
+            "Erro ao consultar filmes em alta"
+        });
+    }
+
+
+    const trendingData =
+      await trendingResponse.json();
+
+
+    const sourceMovies =
+      Array.isArray(
+        trendingData.results
+      )
+        ? trendingData.results
+        : [];
 
 
     const movies =
-      trendingData.results.map(
-        movie => {
-
-          const trailer =
-            trailerMap.get(
-              movie.id
-            ) || null;
-
-
-          return {
-
-            id:
-              movie.id,
-
-            title:
-              movie.title,
-
-            originalTitle:
-              movie.original_title,
-
-            description:
-              movie.overview ||
-              "Sinopse não disponível.",
-
-            releaseDate:
-              movie.release_date ||
-              null,
-
-            rating:
-              Number(
-                movie.vote_average
-                  ?.toFixed(1)
-              ) || 0,
-
-            voteCount:
-              movie.vote_count ||
-              0,
-
-            popularity:
-              movie.popularity ||
-              0,
-
-            genres:
-              (
-                movie.genre_ids ||
-                []
-              )
-                .map(
-                  genreId =>
-                    genreMap[
-                      genreId
-                    ]
-                )
-                .filter(
-                  Boolean
-                ),
-
-            poster:
-              movie.poster_path
-                ? `${TMDB_IMAGE_URL}/w500${movie.poster_path}`
-                : null,
-
-            backdrop:
-              movie.backdrop_path
-                ? `${TMDB_IMAGE_URL}/original${movie.backdrop_path}`
-                : null,
-
-            trailer:
-              trailer
-                ?.embedUrl ||
-              null,
-
-            trailerWatchUrl:
-              trailer
-                ?.watchUrl ||
-              null,
-
-            trailerName:
-              trailer
-                ?.name ||
-              null,
-
-            trailerOfficial:
-              trailer
-                ?.official ||
-              false,
-
-            trailerLanguage:
-              trailer
-                ?.language ||
-              null
-
-          };
-        }
+      await enrichMoviesWithTrailers(
+        sourceMovies,
+        genreMap,
+        headers,
+        TRAILER_MOVIES_LIMIT
       );
 
 
@@ -536,6 +735,9 @@ export default async function handler(
 
         source:
           "TMDB",
+
+        mode:
+          "trending",
 
         period:
           "week",
