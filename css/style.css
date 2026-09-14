@@ -1735,6 +1735,101 @@ img {
 }
 
 
+/* TMDB CREDITS */
+
+.footer__credits {
+  width:
+    min(
+      100%,
+      720px
+    );
+
+  margin-top:
+    22px;
+
+  padding-top:
+    20px;
+
+  border-top:
+    1px solid
+    var(--border);
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    7px;
+
+  color:
+    var(--text-muted);
+
+  font-size:
+    0.76rem;
+
+  line-height:
+    1.6;
+}
+
+.footer__credits p {
+  margin: 0;
+}
+
+.footer__credits a {
+  color:
+    var(--text-soft);
+
+  font-weight:
+    600;
+
+  transition:
+    color var(--transition);
+}
+
+.footer__credits a:hover {
+  color:
+    var(--accent);
+}
+
+.tmdb-credit {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+
+  margin-bottom:
+    4px;
+}
+
+.tmdb-credit img {
+  width:
+    78px;
+
+  height:
+    auto;
+
+  object-fit:
+    contain;
+}
+
+.tmdb-credit__label {
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.8rem;
+
+  font-weight:
+    600;
+}
+
+
 /* ANIMATIONS */
 
 @keyframes heroContentIn {
@@ -1875,6 +1970,27 @@ img {
   .hero-carousel__arrow {
     width: 38px;
     height: 38px;
+  }
+
+  .footer__credits {
+    padding-inline:
+      0;
+  }
+
+  .tmdb-credit {
+    flex-direction:
+      column;
+
+    align-items:
+      flex-start;
+
+    gap:
+      8px;
+  }
+
+  .tmdb-credit img {
+    width:
+      68px;
   }
 
 }
