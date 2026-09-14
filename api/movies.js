@@ -394,6 +394,47 @@ async function enrichMoviesWithTrailers(
 
 
 /* ======================================================
+   UTILITÁRIO DE PÁGINA
+====================================================== */
+
+function getSearchPage(
+  request
+) {
+
+  const rawPage =
+    Array.isArray(
+      request.query?.page
+    )
+      ? request.query.page[0]
+      : request.query?.page;
+
+
+  const parsedPage =
+    Number.parseInt(
+      rawPage,
+      10
+    );
+
+
+  if (
+    !Number.isInteger(
+      parsedPage
+    ) ||
+    parsedPage < 1
+  ) {
+
+    return 1;
+  }
+
+
+  return Math.min(
+    parsedPage,
+    500
+  );
+}
+
+
+/* ======================================================
    HANDLER
 ====================================================== */
 
@@ -478,6 +519,12 @@ export default async function handler(
           0,
           100
         );
+
+
+    const searchPage =
+      getSearchPage(
+        request
+      );
 
 
     const genresResponse =
@@ -568,7 +615,9 @@ export default async function handler(
 
       searchUrl.searchParams.set(
         "page",
-        "1"
+        String(
+          searchPage
+        )
       );
 
 
@@ -628,6 +677,16 @@ export default async function handler(
         );
 
 
+      const currentPage =
+        searchData.page ||
+        searchPage;
+
+
+      const totalPages =
+        searchData.total_pages ||
+        0;
+
+
       return response
         .status(200)
         .json({
@@ -642,16 +701,23 @@ export default async function handler(
             searchQuery,
 
           page:
-            searchData.page ||
-            1,
+            currentPage,
 
-          totalPages:
-            searchData.total_pages ||
-            0,
+          totalPages,
 
           totalResults:
             searchData.total_results ||
             movies.length,
+
+          hasMore:
+            currentPage <
+            totalPages,
+
+          nextPage:
+            currentPage <
+            totalPages
+              ? currentPage + 1
+              : null,
 
           count:
             movies.length,
