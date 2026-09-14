@@ -4,7 +4,7 @@ const TMDB_BASE_URL =
 const TMDB_IMAGE_URL =
   "https://image.tmdb.org/t/p";
 
-const TRAILER_MOVIES_LIMIT =
+const TRAILER_ITEMS_LIMIT =
   10;
 
 const SEARCH_TRAILER_LIMIT =
@@ -37,6 +37,28 @@ function setCorsHeaders(
 
 
 /* ======================================================
+   TIPO DE CONTEÚDO
+====================================================== */
+
+function getMediaType(
+  request
+) {
+
+  const rawType =
+    Array.isArray(
+      request.query?.type
+    )
+      ? request.query.type[0]
+      : request.query?.type;
+
+
+  return rawType === "tv"
+    ? "tv"
+    : "movie";
+}
+
+
+/* ======================================================
    SELEÇÃO DE TRAILER
 ====================================================== */
 
@@ -47,8 +69,7 @@ function selectBestTrailer(
   const youtubeVideos =
     videos.filter(
       video =>
-        video.site ===
-          "YouTube" &&
+        video.site === "YouTube" &&
         video.key
     );
 
@@ -64,8 +85,7 @@ function selectBestTrailer(
   const officialTrailers =
     youtubeVideos.filter(
       video =>
-        video.type ===
-          "Trailer" &&
+        video.type === "Trailer" &&
         video.official
     );
 
@@ -73,16 +93,14 @@ function selectBestTrailer(
   const trailers =
     youtubeVideos.filter(
       video =>
-        video.type ===
-          "Trailer"
+        video.type === "Trailer"
     );
 
 
   const officialTeasers =
     youtubeVideos.filter(
       video =>
-        video.type ===
-          "Teaser" &&
+        video.type === "Teaser" &&
         video.official
     );
 
@@ -90,8 +108,7 @@ function selectBestTrailer(
   const teasers =
     youtubeVideos.filter(
       video =>
-        video.type ===
-          "Teaser"
+        video.type === "Teaser"
     );
 
 
@@ -104,6 +121,7 @@ function selectBestTrailer(
 
 
   if (!selected) {
+
     return null;
   }
 
@@ -158,16 +176,23 @@ function selectBestTrailer(
    BUSCA DE TRAILER
 ====================================================== */
 
-async function fetchMovieTrailer(
-  movieId,
+async function fetchTrailer(
+  itemId,
+  mediaType,
   headers
 ) {
 
   try {
 
+    const endpoint =
+      mediaType === "tv"
+        ? "tv"
+        : "movie";
+
+
     const ptResponse =
       await fetch(
-        `${TMDB_BASE_URL}/movie/${movieId}/videos?language=pt-BR`,
+        `${TMDB_BASE_URL}/${endpoint}/${itemId}/videos?language=pt-BR`,
         {
           headers
         }
@@ -182,8 +207,7 @@ async function fetchMovieTrailer(
 
       const ptTrailer =
         selectBestTrailer(
-          ptData.results ||
-          []
+          ptData.results || []
         );
 
 
@@ -196,7 +220,7 @@ async function fetchMovieTrailer(
 
     const enResponse =
       await fetch(
-        `${TMDB_BASE_URL}/movie/${movieId}/videos?language=en-US`,
+        `${TMDB_BASE_URL}/${endpoint}/${itemId}/videos?language=en-US`,
         {
           headers
         }
@@ -214,15 +238,14 @@ async function fetchMovieTrailer(
 
 
     return selectBestTrailer(
-      enData.results ||
-      []
+      enData.results || []
     );
 
 
   } catch (error) {
 
     console.error(
-      `Erro ao consultar trailer do filme ${movieId}:`,
+      `Erro ao consultar trailer ${mediaType} ${itemId}:`,
       error
     );
 
@@ -233,52 +256,71 @@ async function fetchMovieTrailer(
 
 
 /* ======================================================
-   MAPEAMENTO DE FILMES
+   MAPEAMENTO
 ====================================================== */
 
-function mapMovie(
-  movie,
+function mapItem(
+  item,
   genreMap,
+  mediaType,
   trailer = null
 ) {
+
+  const isTv =
+    mediaType === "tv";
+
 
   return {
 
     id:
-      movie.id,
+      item.id,
+
+    mediaType:
+      mediaType,
+
+    type:
+      isTv
+        ? "series"
+        : "movie",
 
     title:
-      movie.title,
+      isTv
+        ? item.name
+        : item.title,
 
     originalTitle:
-      movie.original_title,
+      isTv
+        ? item.original_name
+        : item.original_title,
 
     description:
-      movie.overview ||
+      item.overview ||
       "Sinopse não disponível.",
 
     releaseDate:
-      movie.release_date ||
-      null,
+      isTv
+        ? item.first_air_date ||
+          null
+        : item.release_date ||
+          null,
 
     rating:
       Number(
-        movie.vote_average
+        item.vote_average
           ?.toFixed(1)
-      ) ||
-      0,
+      ) || 0,
 
     voteCount:
-      movie.vote_count ||
+      item.vote_count ||
       0,
 
     popularity:
-      movie.popularity ||
+      item.popularity ||
       0,
 
     genres:
       (
-        movie.genre_ids ||
+        item.genre_ids ||
         []
       )
         .map(
@@ -291,39 +333,44 @@ function mapMovie(
           Boolean
         ),
 
+    originCountry:
+      isTv
+        ? item.origin_country ||
+          []
+        : [],
+
+    originalLanguage:
+      item.original_language ||
+      null,
+
     poster:
-      movie.poster_path
-        ? `${TMDB_IMAGE_URL}/w500${movie.poster_path}`
+      item.poster_path
+        ? `${TMDB_IMAGE_URL}/w500${item.poster_path}`
         : null,
 
     backdrop:
-      movie.backdrop_path
-        ? `${TMDB_IMAGE_URL}/original${movie.backdrop_path}`
+      item.backdrop_path
+        ? `${TMDB_IMAGE_URL}/original${item.backdrop_path}`
         : null,
 
     trailer:
-      trailer
-        ?.embedUrl ||
+      trailer?.embedUrl ||
       null,
 
     trailerWatchUrl:
-      trailer
-        ?.watchUrl ||
+      trailer?.watchUrl ||
       null,
 
     trailerName:
-      trailer
-        ?.name ||
+      trailer?.name ||
       null,
 
     trailerOfficial:
-      trailer
-        ?.official ||
+      trailer?.official ||
       false,
 
     trailerLanguage:
-      trailer
-        ?.language ||
+      trailer?.language ||
       null
 
   };
@@ -331,18 +378,19 @@ function mapMovie(
 
 
 /* ======================================================
-   ENRIQUECIMENTO DE TRAILERS
+   TRAILERS
 ====================================================== */
 
-async function enrichMoviesWithTrailers(
-  sourceMovies,
+async function enrichWithTrailers(
+  sourceItems,
   genreMap,
+  mediaType,
   headers,
   limit
 ) {
 
-  const moviesForTrailers =
-    sourceMovies.slice(
+  const itemsForTrailers =
+    sourceItems.slice(
       0,
       limit
     );
@@ -350,10 +398,11 @@ async function enrichMoviesWithTrailers(
 
   const trailers =
     await Promise.all(
-      moviesForTrailers.map(
-        movie =>
-          fetchMovieTrailer(
-            movie.id,
+      itemsForTrailers.map(
+        item =>
+          fetchTrailer(
+            item.id,
+            mediaType,
             headers
           )
       )
@@ -364,14 +413,14 @@ async function enrichMoviesWithTrailers(
     new Map();
 
 
-  moviesForTrailers.forEach(
+  itemsForTrailers.forEach(
     (
-      movie,
+      item,
       index
     ) => {
 
       trailerMap.set(
-        movie.id,
+        item.id,
         trailers[index] ||
         null
       );
@@ -379,13 +428,14 @@ async function enrichMoviesWithTrailers(
   );
 
 
-  return sourceMovies.map(
-    movie =>
-      mapMovie(
-        movie,
+  return sourceItems.map(
+    item =>
+      mapItem(
+        item,
         genreMap,
+        mediaType,
         trailerMap.get(
-          movie.id
+          item.id
         ) ||
         null
       )
@@ -394,7 +444,7 @@ async function enrichMoviesWithTrailers(
 
 
 /* ======================================================
-   UTILITÁRIO DE PÁGINA
+   PÁGINA
 ====================================================== */
 
 function getSearchPage(
@@ -435,6 +485,357 @@ function getSearchPage(
 
 
 /* ======================================================
+   QUERY
+====================================================== */
+
+function getSearchQuery(
+  request
+) {
+
+  const rawQuery =
+    Array.isArray(
+      request.query?.q
+    )
+      ? request.query.q[0]
+      : request.query?.q;
+
+
+  return String(
+    rawQuery || ""
+  )
+    .trim()
+    .slice(
+      0,
+      100
+    );
+}
+
+
+/* ======================================================
+   GÊNEROS
+====================================================== */
+
+async function fetchGenres(
+  mediaType,
+  headers
+) {
+
+  const genresResponse =
+    await fetch(
+      `${TMDB_BASE_URL}/genre/${mediaType}/list?language=pt-BR`,
+      {
+        headers
+      }
+    );
+
+
+  if (!genresResponse.ok) {
+
+    const errorData =
+      await genresResponse.text();
+
+
+    console.error(
+      `Erro TMDB Genres ${mediaType}:`,
+      genresResponse.status,
+      errorData
+    );
+
+
+    throw new Error(
+      "GENRES_ERROR"
+    );
+  }
+
+
+  const genresData =
+    await genresResponse.json();
+
+
+  return Object.fromEntries(
+    (
+      genresData.genres ||
+      []
+    ).map(
+      genre => [
+        genre.id,
+        genre.name
+      ]
+    )
+  );
+}
+
+
+/* ======================================================
+   BUSCA
+====================================================== */
+
+async function searchItems(
+  searchQuery,
+  searchPage,
+  mediaType,
+  genreMap,
+  headers
+) {
+
+  const endpoint =
+    mediaType === "tv"
+      ? "tv"
+      : "movie";
+
+
+  const searchUrl =
+    new URL(
+      `${TMDB_BASE_URL}/search/${endpoint}`
+    );
+
+
+  searchUrl.searchParams.set(
+    "query",
+    searchQuery
+  );
+
+
+  searchUrl.searchParams.set(
+    "language",
+    "pt-BR"
+  );
+
+
+  searchUrl.searchParams.set(
+    "include_adult",
+    "false"
+  );
+
+
+  searchUrl.searchParams.set(
+    "page",
+    String(
+      searchPage
+    )
+  );
+
+
+  /*
+    O parâmetro region é aplicável
+    à busca de filmes.
+  */
+
+  if (
+    mediaType === "movie"
+  ) {
+
+    searchUrl.searchParams.set(
+      "region",
+      "BR"
+    );
+  }
+
+
+  const searchResponse =
+    await fetch(
+      searchUrl,
+      {
+        headers
+      }
+    );
+
+
+  if (!searchResponse.ok) {
+
+    const errorData =
+      await searchResponse.text();
+
+
+    console.error(
+      `Erro TMDB Search ${mediaType}:`,
+      searchResponse.status,
+      errorData
+    );
+
+
+    throw new Error(
+      "SEARCH_ERROR"
+    );
+  }
+
+
+  const searchData =
+    await searchResponse.json();
+
+
+  const sourceItems =
+    Array.isArray(
+      searchData.results
+    )
+      ? searchData.results
+      : [];
+
+
+  const results =
+    await enrichWithTrailers(
+      sourceItems,
+      genreMap,
+      mediaType,
+      headers,
+      SEARCH_TRAILER_LIMIT
+    );
+
+
+  const currentPage =
+    searchData.page ||
+    searchPage;
+
+
+  const totalPages =
+    searchData.total_pages ||
+    0;
+
+
+  return {
+
+    source:
+      "TMDB",
+
+    mode:
+      "search",
+
+    mediaType,
+
+    contentType:
+      mediaType === "tv"
+        ? "series"
+        : "movies",
+
+    query:
+      searchQuery,
+
+    page:
+      currentPage,
+
+    totalPages,
+
+    totalResults:
+      searchData.total_results ||
+      results.length,
+
+    hasMore:
+      currentPage <
+      totalPages,
+
+    nextPage:
+      currentPage <
+      totalPages
+        ? currentPage + 1
+        : null,
+
+    count:
+      results.length,
+
+    trailersEnriched:
+      results.filter(
+        item => item.trailer
+      ).length,
+
+    results
+
+  };
+}
+
+
+/* ======================================================
+   TRENDING
+====================================================== */
+
+async function fetchTrending(
+  mediaType,
+  genreMap,
+  headers
+) {
+
+  const trendingResponse =
+    await fetch(
+      `${TMDB_BASE_URL}/trending/${mediaType}/week?language=pt-BR`,
+      {
+        headers
+      }
+    );
+
+
+  if (!trendingResponse.ok) {
+
+    const errorData =
+      await trendingResponse.text();
+
+
+    console.error(
+      `Erro TMDB Trending ${mediaType}:`,
+      trendingResponse.status,
+      errorData
+    );
+
+
+    throw new Error(
+      "TRENDING_ERROR"
+    );
+  }
+
+
+  const trendingData =
+    await trendingResponse.json();
+
+
+  const sourceItems =
+    Array.isArray(
+      trendingData.results
+    )
+      ? trendingData.results
+      : [];
+
+
+  const results =
+    await enrichWithTrailers(
+      sourceItems,
+      genreMap,
+      mediaType,
+      headers,
+      TRAILER_ITEMS_LIMIT
+    );
+
+
+  return {
+
+    source:
+      "TMDB",
+
+    mode:
+      "trending",
+
+    mediaType,
+
+    contentType:
+      mediaType === "tv"
+        ? "series"
+        : "movies",
+
+    period:
+      "week",
+
+    count:
+      results.length,
+
+    trailersEnriched:
+      results.filter(
+        item => item.trailer
+      ).length,
+
+    results
+
+  };
+}
+
+
+/* ======================================================
    HANDLER
 ====================================================== */
 
@@ -450,7 +851,7 @@ export default async function handler(
 
   if (
     request.method ===
-      "OPTIONS"
+    "OPTIONS"
   ) {
 
     return response
@@ -461,7 +862,7 @@ export default async function handler(
 
   if (
     request.method !==
-      "GET"
+    "GET"
   ) {
 
     return response
@@ -501,24 +902,16 @@ export default async function handler(
 
   try {
 
-    const rawQuery =
-      Array.isArray(
-        request.query?.q
-      )
-        ? request.query.q[0]
-        : request.query?.q;
+    const mediaType =
+      getMediaType(
+        request
+      );
 
 
     const searchQuery =
-      String(
-        rawQuery ||
-        ""
-      )
-        .trim()
-        .slice(
-          0,
-          100
-        );
+      getSearchQuery(
+        request
+      );
 
 
     const searchPage =
@@ -527,300 +920,42 @@ export default async function handler(
       );
 
 
-    const genresResponse =
-      await fetch(
-        `${TMDB_BASE_URL}/genre/movie/list?language=pt-BR`,
-        {
-          headers
-        }
-      );
-
-
-    if (
-      !genresResponse.ok
-    ) {
-
-      const errorData =
-        await genresResponse.text();
-
-
-      console.error(
-        "Erro TMDB Genres:",
-        genresResponse.status,
-        errorData
-      );
-
-
-      return response
-        .status(
-          genresResponse.status
-        )
-        .json({
-          error:
-            "Erro ao consultar gêneros"
-        });
-    }
-
-
-    const genresData =
-      await genresResponse.json();
-
-
     const genreMap =
-      Object.fromEntries(
-        genresData.genres.map(
-          genre => [
-            genre.id,
-            genre.name
-          ]
-        )
+      await fetchGenres(
+        mediaType,
+        headers
       );
 
-
-    /* ==================================================
-       MODO BUSCA
-    ================================================== */
 
     if (searchQuery) {
 
-      const searchUrl =
-        new URL(
-          `${TMDB_BASE_URL}/search/movie`
-        );
-
-
-      searchUrl.searchParams.set(
-        "query",
-        searchQuery
-      );
-
-
-      searchUrl.searchParams.set(
-        "language",
-        "pt-BR"
-      );
-
-
-      searchUrl.searchParams.set(
-        "region",
-        "BR"
-      );
-
-
-      searchUrl.searchParams.set(
-        "include_adult",
-        "false"
-      );
-
-
-      searchUrl.searchParams.set(
-        "page",
-        String(
-          searchPage
-        )
-      );
-
-
-      const searchResponse =
-        await fetch(
-          searchUrl,
-          {
-            headers
-          }
-        );
-
-
-      if (
-        !searchResponse.ok
-      ) {
-
-        const errorData =
-          await searchResponse.text();
-
-
-        console.error(
-          "Erro TMDB Search:",
-          searchResponse.status,
-          errorData
-        );
-
-
-        return response
-          .status(
-            searchResponse.status
-          )
-          .json({
-            error:
-              "Erro ao pesquisar filmes"
-          });
-      }
-
-
-      const searchData =
-        await searchResponse.json();
-
-
-      const sourceMovies =
-        Array.isArray(
-          searchData.results
-        )
-          ? searchData.results
-          : [];
-
-
-      const movies =
-        await enrichMoviesWithTrailers(
-          sourceMovies,
+      const data =
+        await searchItems(
+          searchQuery,
+          searchPage,
+          mediaType,
           genreMap,
-          headers,
-          SEARCH_TRAILER_LIMIT
+          headers
         );
-
-
-      const currentPage =
-        searchData.page ||
-        searchPage;
-
-
-      const totalPages =
-        searchData.total_pages ||
-        0;
 
 
       return response
         .status(200)
-        .json({
-
-          source:
-            "TMDB",
-
-          mode:
-            "search",
-
-          query:
-            searchQuery,
-
-          page:
-            currentPage,
-
-          totalPages,
-
-          totalResults:
-            searchData.total_results ||
-            movies.length,
-
-          hasMore:
-            currentPage <
-            totalPages,
-
-          nextPage:
-            currentPage <
-            totalPages
-              ? currentPage + 1
-              : null,
-
-          count:
-            movies.length,
-
-          trailersEnriched:
-            movies.filter(
-              movie =>
-                movie.trailer
-            ).length,
-
-          results:
-            movies
-
-        });
+        .json(data);
     }
 
 
-    /* ==================================================
-       MODO EM ALTA
-    ================================================== */
-
-    const trendingResponse =
-      await fetch(
-        `${TMDB_BASE_URL}/trending/movie/week?language=pt-BR`,
-        {
-          headers
-        }
-      );
-
-
-    if (
-      !trendingResponse.ok
-    ) {
-
-      const errorData =
-        await trendingResponse.text();
-
-
-      console.error(
-        "Erro TMDB Trending:",
-        trendingResponse.status,
-        errorData
-      );
-
-
-      return response
-        .status(
-          trendingResponse.status
-        )
-        .json({
-          error:
-            "Erro ao consultar filmes em alta"
-        });
-    }
-
-
-    const trendingData =
-      await trendingResponse.json();
-
-
-    const sourceMovies =
-      Array.isArray(
-        trendingData.results
-      )
-        ? trendingData.results
-        : [];
-
-
-    const movies =
-      await enrichMoviesWithTrailers(
-        sourceMovies,
+    const data =
+      await fetchTrending(
+        mediaType,
         genreMap,
-        headers,
-        TRAILER_MOVIES_LIMIT
+        headers
       );
 
 
     return response
       .status(200)
-      .json({
-
-        source:
-          "TMDB",
-
-        mode:
-          "trending",
-
-        period:
-          "week",
-
-        count:
-          movies.length,
-
-        trailersEnriched:
-          movies.filter(
-            movie =>
-              movie.trailer
-          ).length,
-
-        results:
-          movies
-
-      });
+      .json(data);
 
 
   } catch (error) {
@@ -831,11 +966,53 @@ export default async function handler(
     );
 
 
+    if (
+      error.message ===
+      "GENRES_ERROR"
+    ) {
+
+      return response
+        .status(502)
+        .json({
+          error:
+            "Erro ao consultar gêneros no TMDB"
+        });
+    }
+
+
+    if (
+      error.message ===
+      "SEARCH_ERROR"
+    ) {
+
+      return response
+        .status(502)
+        .json({
+          error:
+            "Erro ao pesquisar no TMDB"
+        });
+    }
+
+
+    if (
+      error.message ===
+      "TRENDING_ERROR"
+    ) {
+
+      return response
+        .status(502)
+        .json({
+          error:
+            "Erro ao consultar conteúdos em alta"
+        });
+    }
+
+
     return response
       .status(500)
       .json({
         error:
-          "Erro interno ao consultar filmes"
+          "Erro interno ao consultar o TMDB"
       });
   }
 }
