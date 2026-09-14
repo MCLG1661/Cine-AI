@@ -346,6 +346,33 @@ function getTmdbGenres(
 }
 
 
+function getWatchUrl(
+  movie
+) {
+
+  if (
+    movie?.trailerWatchUrl
+  ) {
+
+    return movie.trailerWatchUrl;
+  }
+
+
+  if (
+    movie?.trailer
+  ) {
+
+    return movie.trailer.replace(
+      "/embed/",
+      "/watch?v="
+    );
+  }
+
+
+  return null;
+}
+
+
 /* ======================================================
    TMDB
 ====================================================== */
@@ -788,17 +815,24 @@ function renderTmdbHero(
     "Sinopse não disponível.";
 
 
-  /*
-    Trailers reais do TMDB serão
-    integrados em uma etapa posterior.
-  */
+  if (
+    movie.trailer
+  ) {
 
-  heroTrailerButton.style.display =
-    "none";
+    heroTrailerButton.style.display =
+      "";
 
+    heroTrailerButton.dataset.trailer =
+      movie.trailer;
 
-  heroTrailerButton.dataset.trailer =
-    "";
+  } else {
+
+    heroTrailerButton.style.display =
+      "none";
+
+    heroTrailerButton.dataset.trailer =
+      "";
+  }
 
 
   heroDetailsButton.dataset.movieId =
@@ -1000,22 +1034,24 @@ function openHeroTrailer() {
     getCurrentHeroMovie();
 
 
-  if (
-    !movie ||
-    isTmdbMovie(
+  if (!movie) {
+    return;
+  }
+
+
+  const watchUrl =
+    getWatchUrl(
       movie
-    ) ||
-    !movie.trailer
-  ) {
+    );
+
+
+  if (!watchUrl) {
     return;
   }
 
 
   window.open(
-    movie.trailer.replace(
-      "/embed/",
-      "/watch?v="
-    ),
+    watchUrl,
     "_blank",
     "noopener,noreferrer"
   );
@@ -1287,6 +1323,21 @@ function createTmdbMovieCard(
       `;
 
 
+  const trailerButton =
+    movie.trailer
+      ? `
+          <button
+            class="trailer-button"
+            data-trailer="${movie.trailer}"
+            title="Assistir trailer"
+            aria-label="Assistir trailer de ${movie.title}"
+          >
+            ▶
+          </button>
+        `
+      : "";
+
+
   article.innerHTML =
     `
       <div
@@ -1366,6 +1417,8 @@ function createTmdbMovieCard(
           class="movie-card__actions"
         >
 
+          ${trailerButton}
+
           <button
             class="details-button"
             data-source="tmdb"
@@ -1379,6 +1432,39 @@ function createTmdbMovieCard(
         </div>
 
       </div>
+
+
+      ${
+        movie.trailer
+          ? `
+            <div
+              class="movie-card__trailer"
+            >
+
+              <div
+                class="trailer-preview"
+              >
+
+                <button
+                  class="trailer-close"
+                  aria-label="Fechar trailer"
+                >
+                  ✕
+                </button>
+
+                <iframe
+                  src=""
+                  title="Trailer de ${movie.title}"
+                  allow="autoplay; encrypted-media"
+                  allowfullscreen
+                ></iframe>
+
+              </div>
+
+            </div>
+          `
+          : ""
+      }
     `;
 
 
@@ -1809,8 +1895,14 @@ function openTrailer(
   }
 
 
+  const separator =
+    trailerUrl.includes("?")
+      ? "&"
+      : "?";
+
+
   iframe.src =
-    `${trailerUrl}?autoplay=1&mute=1&rel=0`;
+    `${trailerUrl}${separator}autoplay=1&mute=1&rel=0`;
 
 
   card.classList.add(
@@ -2113,6 +2205,12 @@ function openLocalDetails(
     movie.trailer;
 
 
+  trailerButton.dataset.watchUrl =
+    getWatchUrl(
+      movie
+    ) || "";
+
+
   const favoriteButton =
     document.getElementById(
       "modalFavoriteButton"
@@ -2244,10 +2342,38 @@ function openTmdbDetails(
     movie.description;
 
 
-  document.getElementById(
-    "modalTrailerButton"
-  ).style.display =
-    "none";
+  const trailerButton =
+    document.getElementById(
+      "modalTrailerButton"
+    );
+
+
+  if (
+    movie.trailer
+  ) {
+
+    trailerButton.style.display =
+      "";
+
+    trailerButton.dataset.trailer =
+      movie.trailer;
+
+    trailerButton.dataset.watchUrl =
+      getWatchUrl(
+        movie
+      ) || "";
+
+  } else {
+
+    trailerButton.style.display =
+      "none";
+
+    trailerButton.dataset.trailer =
+      "";
+
+    trailerButton.dataset.watchUrl =
+      "";
+  }
 
 
   document.getElementById(
@@ -2695,6 +2821,22 @@ document.addEventListener(
       modalTrailer.style.display !==
         "none"
     ) {
+
+      const watchUrl =
+        modalTrailer.dataset.watchUrl;
+
+
+      if (watchUrl) {
+
+        window.open(
+          watchUrl,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
+        return;
+      }
+
 
       const trailer =
         modalTrailer.dataset.trailer;
