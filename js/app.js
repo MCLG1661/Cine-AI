@@ -1,12 +1,24 @@
-const featuredMoviesContainer = document.getElementById("featuredMovies");
-const seriesGrid = document.getElementById("seriesGrid");
-const myListSection = document.getElementById("minha-lista");
+const featuredMoviesContainer =
+  document.getElementById("featuredMovies");
+
+const seriesGrid =
+  document.getElementById("seriesGrid");
+
+const recommendationGrid =
+  document.getElementById("recommendationGrid");
+
+const recommendationReason =
+  document.getElementById("recommendationReason");
+
+const myListSection =
+  document.getElementById("minha-lista");
 
 /* ======================================================
    API
 ====================================================== */
 
-const CINEAI_API_URL = "https://cine-ai.vercel.app/api/movies";
+const CINEAI_API_URL =
+  "https://cine-ai.vercel.app/api/movies";
 
 let tmdbMovies = [];
 let tmdbSeries = [];
@@ -16,50 +28,107 @@ let tmdbSearchResults = [];
    HERO
 ====================================================== */
 
-const hero = document.getElementById("inicio");
-const heroBadge = document.getElementById("heroBadge");
-const heroTitle = document.getElementById("heroTitle");
-const heroMeta = document.getElementById("heroMeta");
-const heroDescription = document.getElementById("heroDescription");
-const heroTrailerButton = document.getElementById("heroTrailerButton");
-const heroDetailsButton = document.getElementById("heroDetailsButton");
-const heroPrevious = document.getElementById("heroPrevious");
-const heroNext = document.getElementById("heroNext");
-const heroIndicators = document.getElementById("heroIndicators");
+const hero =
+  document.getElementById("inicio");
+
+const heroBadge =
+  document.getElementById("heroBadge");
+
+const heroTitle =
+  document.getElementById("heroTitle");
+
+const heroMeta =
+  document.getElementById("heroMeta");
+
+const heroDescription =
+  document.getElementById("heroDescription");
+
+const heroTrailerButton =
+  document.getElementById("heroTrailerButton");
+
+const heroDetailsButton =
+  document.getElementById("heroDetailsButton");
+
+const heroPrevious =
+  document.getElementById("heroPrevious");
+
+const heroNext =
+  document.getElementById("heroNext");
+
+const heroIndicators =
+  document.getElementById("heroIndicators");
 
 /* ======================================================
    BUSCA
 ====================================================== */
 
-const searchButton = document.getElementById("searchButton");
-const searchPanel = document.getElementById("searchPanel");
-const searchInput = document.getElementById("searchInput");
-const searchClose = document.getElementById("searchClose");
-const searchResults = document.getElementById("searchResults");
-const genreFilters = document.getElementById("genreFilters");
+const searchButton =
+  document.getElementById("searchButton");
+
+const searchPanel =
+  document.getElementById("searchPanel");
+
+const searchInput =
+  document.getElementById("searchInput");
+
+const searchClose =
+  document.getElementById("searchClose");
+
+const searchResults =
+  document.getElementById("searchResults");
+
+const genreFilters =
+  document.getElementById("genreFilters");
 
 /* ======================================================
    ESTADO
 ====================================================== */
 
-const STORAGE_KEY = "cineai-my-list";
-const HERO_INTERVAL = 7000;
-const SEARCH_DEBOUNCE = 450;
-const MIN_TMDB_SEARCH_LENGTH = 2;
+const STORAGE_KEY =
+  "cineai-my-list";
 
-let myList = loadMyList();
-let selectedGenre = "all";
-let heroMovies = [];
-let currentHeroIndex = 0;
-let heroTimer = null;
-let searchTimer = null;
-let searchController = null;
-let activeSearchQuery = "";
-let searchLoadingMore = false;
+const HERO_INTERVAL =
+  7000;
+
+const SEARCH_DEBOUNCE =
+  450;
+
+const MIN_TMDB_SEARCH_LENGTH =
+  2;
+
+let myList =
+  loadMyList();
+
+let selectedGenre =
+  "all";
+
+let heroMovies =
+  [];
+
+let currentHeroIndex =
+  0;
+
+let heroTimer =
+  null;
+
+let searchTimer =
+  null;
+
+let searchController =
+  null;
+
+let activeSearchQuery =
+  "";
+
+let searchLoadingMore =
+  false;
 
 let searchPagination = {
-  movie: createEmptyPaginationState(),
-  tv: createEmptyPaginationState()
+  movie:
+    createEmptyPaginationState(),
+
+  tv:
+    createEmptyPaginationState()
 };
 
 /* ======================================================
@@ -67,14 +136,22 @@ let searchPagination = {
 ====================================================== */
 
 function getTmdbMediaType(item) {
-  return item?.mediaType === "tv" ? "tv" : "movie";
+  return item?.mediaType === "tv"
+    ? "tv"
+    : "movie";
 }
 
-function normalizeTmdbItem(item, mediaType = "movie") {
+function normalizeTmdbItem(
+  item,
+  mediaType = "movie"
+) {
   return {
     ...item,
     mediaType,
-    type: mediaType === "tv" ? "series" : "movie",
+    type:
+      mediaType === "tv"
+        ? "series"
+        : "movie",
     source: "tmdb"
   };
 }
@@ -120,12 +197,13 @@ function normalizeSavedItem(item) {
       source: "tmdb",
       id: Number(item.id),
       mediaType,
-      movie: item.movie
-        ? normalizeTmdbItem(
-            item.movie,
-            mediaType
-          )
-        : null
+      movie:
+        item.movie
+          ? normalizeTmdbItem(
+              item.movie,
+              mediaType
+            )
+          : null
     };
   }
 
@@ -190,6 +268,7 @@ function loadMyList() {
     });
 
     return unique;
+
   } catch (error) {
     console.error(
       "Erro ao carregar Minha Lista:",
@@ -247,39 +326,70 @@ function createTmdbSnapshot(item) {
       mediaType === "tv"
         ? "series"
         : "movie",
-    title: item.title,
+
+    title:
+      item.title,
+
     originalTitle:
-      item.originalTitle || null,
+      item.originalTitle ||
+      null,
+
     description:
       item.description ||
       "Sinopse não disponível.",
+
     releaseDate:
-      item.releaseDate || null,
+      item.releaseDate ||
+      null,
+
     rating:
-      item.rating || 0,
+      item.rating ||
+      0,
+
     voteCount:
-      item.voteCount || 0,
+      item.voteCount ||
+      0,
+
     popularity:
-      item.popularity || 0,
+      item.popularity ||
+      0,
+
     genres:
       Array.isArray(item.genres)
         ? item.genres
         : [],
+
     poster:
-      item.poster || null,
+      item.poster ||
+      null,
+
     backdrop:
-      item.backdrop || null,
+      item.backdrop ||
+      null,
+
     trailer:
-      item.trailer || null,
+      item.trailer ||
+      null,
+
     trailerWatchUrl:
-      item.trailerWatchUrl || null,
+      item.trailerWatchUrl ||
+      null,
+
     trailerName:
-      item.trailerName || null,
+      item.trailerName ||
+      null,
+
     trailerOfficial:
-      Boolean(item.trailerOfficial),
+      Boolean(
+        item.trailerOfficial
+      ),
+
     trailerLanguage:
-      item.trailerLanguage || null,
-    source: "tmdb"
+      item.trailerLanguage ||
+      null,
+
+    source:
+      "tmdb"
   };
 }
 
@@ -326,11 +436,17 @@ function toggleMyList(
             saved.mediaType
           ) !== key
       );
-  } else if (source === "tmdb") {
+  } else if (
+    source === "tmdb"
+  ) {
     myList.push({
-      source: "tmdb",
+      source:
+        "tmdb",
+
       id,
+
       mediaType,
+
       movie:
         createTmdbSnapshot(item)
     });
@@ -370,7 +486,10 @@ function getYearFromDate(date) {
     return "—";
   }
 
-  return String(date).slice(0, 4);
+  return String(date).slice(
+    0,
+    4
+  );
 }
 
 function getTmdbMovieById(id) {
@@ -409,14 +528,16 @@ function getSavedTmdbItemById(
   const saved =
     myList.find(
       item =>
-        item.source === "tmdb" &&
+        item.source ===
+          "tmdb" &&
         item.mediaType ===
           mediaType &&
         String(item.id) ===
           String(id)
     );
 
-  return saved?.movie || null;
+  return saved?.movie ||
+    null;
 }
 
 function getTmdbItemFromAnySource(
@@ -487,11 +608,140 @@ function getWatchUrl(item) {
 }
 
 /* ======================================================
+   RECOMENDAÇÕES
+====================================================== */
+
+function renderRecommendations() {
+  if (
+    !recommendationGrid ||
+    !recommendationReason
+  ) {
+    return;
+  }
+
+  recommendationGrid.innerHTML =
+    "";
+
+  if (
+    !window.CineAIRecommendations
+  ) {
+    recommendationReason.textContent =
+      "Recomendações temporariamente indisponíveis.";
+
+    return;
+  }
+
+  if (
+    tmdbMovies.length === 0 &&
+    tmdbSeries.length === 0
+  ) {
+    recommendationReason.textContent =
+      "Carregando sugestões personalizadas...";
+
+    recommendationGrid.innerHTML = `
+      <div
+        class="empty-list"
+        style="grid-column: 1 / -1;"
+      >
+        <span>✨</span>
+
+        <p>
+          Preparando recomendações...
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  const result =
+    window.CineAIRecommendations
+      .recommend({
+        savedList:
+          myList,
+
+        localCatalog:
+          movies,
+
+        tmdbMovies,
+
+        tmdbSeries,
+
+        limit:
+          8
+      });
+
+  const recommendations =
+    result.recommendations || [];
+
+  if (
+    result.mode ===
+    "personalized" &&
+    result.genreProfile?.length
+  ) {
+    const topGenres =
+      result.genreProfile
+        .slice(0, 2)
+        .map(
+          genre =>
+            genre.name
+        );
+
+    if (
+      topGenres.length === 1
+    ) {
+      recommendationReason.textContent =
+        `Com base no seu interesse por ${topGenres[0]}.`;
+    } else {
+      recommendationReason.textContent =
+        `Com base nos seus interesses por ${topGenres[0]} e ${topGenres[1]}.`;
+    }
+  } else {
+    recommendationReason.textContent =
+      "Seleção baseada nos títulos mais bem avaliados e populares do momento.";
+  }
+
+  if (
+    recommendations.length === 0
+  ) {
+    recommendationGrid.innerHTML = `
+      <div
+        class="empty-list"
+        style="grid-column: 1 / -1;"
+      >
+        <span>🎯</span>
+
+        <p>
+          Ainda não há recomendações disponíveis.
+        </p>
+
+        <small>
+          Adicione filmes ou séries à Minha Lista.
+        </small>
+      </div>
+    `;
+
+    return;
+  }
+
+  recommendations.forEach(
+    item => {
+      recommendationGrid
+        .appendChild(
+          createTmdbMovieCard(item)
+        );
+    }
+  );
+}
+
+/* ======================================================
    TMDB — FILMES EM ALTA
 ====================================================== */
 
 async function loadTmdbMovies() {
-  if (!featuredMoviesContainer) {
+  if (
+    !featuredMoviesContainer
+  ) {
     return;
   }
 
@@ -512,7 +762,11 @@ async function loadTmdbMovies() {
     const data =
       await response.json();
 
-    if (!Array.isArray(data.results)) {
+    if (
+      !Array.isArray(
+        data.results
+      )
+    ) {
       throw new Error(
         "Formato inesperado da API"
       );
@@ -529,7 +783,9 @@ async function loadTmdbMovies() {
 
     renderFeaturedMovies();
     renderMyList();
+    renderRecommendations();
     initializeTmdbHero();
+
   } catch (error) {
     console.error(
       "Erro ao carregar filmes TMDB:",
@@ -538,6 +794,7 @@ async function loadTmdbMovies() {
 
     renderFeaturedFallback();
     renderMyList();
+    renderRecommendations();
   }
 }
 
@@ -566,14 +823,17 @@ function renderFeaturedFallback() {
 
   movies
     .filter(
-      item => item.featured
+      item =>
+        item.featured
     )
-    .forEach(item => {
-      featuredMoviesContainer
-        .appendChild(
-          createMovieCard(item)
-        );
-    });
+    .forEach(
+      item => {
+        featuredMoviesContainer
+          .appendChild(
+            createMovieCard(item)
+          );
+      }
+    );
 }
 
 /* ======================================================
@@ -602,7 +862,11 @@ async function loadTmdbSeries() {
     const data =
       await response.json();
 
-    if (!Array.isArray(data.results)) {
+    if (
+      !Array.isArray(
+        data.results
+      )
+    ) {
       throw new Error(
         "Formato inesperado da API de séries"
       );
@@ -619,6 +883,8 @@ async function loadTmdbSeries() {
 
     renderSeries();
     renderMyList();
+    renderRecommendations();
+
   } catch (error) {
     console.error(
       "Erro ao carregar séries TMDB:",
@@ -629,6 +895,7 @@ async function loadTmdbSeries() {
 
     renderSeriesFallback();
     renderMyList();
+    renderRecommendations();
   }
 }
 
@@ -652,18 +919,21 @@ function renderSeriesLoading() {
 }
 
 function renderSeriesFallback() {
-  seriesGrid.innerHTML = "";
+  seriesGrid.innerHTML =
+    "";
 
   movies
     .filter(
       item =>
         item.type === "series"
     )
-    .forEach(item => {
-      seriesGrid.appendChild(
-        createMovieCard(item)
-      );
-    });
+    .forEach(
+      item => {
+        seriesGrid.appendChild(
+          createMovieCard(item)
+        );
+      }
+    );
 }
 
 /* ======================================================
@@ -674,24 +944,34 @@ function initializeHero() {
   heroMovies =
     movies
       .filter(
-        item => item.featured
+        item =>
+          item.featured
       )
-      .map(item => ({
-        ...item,
-        source: "local"
-      }));
+      .map(
+        item => ({
+          ...item,
+          source:
+            "local"
+        })
+      );
 
-  if (heroMovies.length === 0) {
+  if (
+    heroMovies.length === 0
+  ) {
     heroMovies =
       movies
         .slice(0, 4)
-        .map(item => ({
-          ...item,
-          source: "local"
-        }));
+        .map(
+          item => ({
+            ...item,
+            source:
+              "local"
+          })
+        );
   }
 
-  currentHeroIndex = 0;
+  currentHeroIndex =
+    0;
 
   renderHeroIndicators();
   renderHero();
@@ -701,7 +981,8 @@ function initializeHero() {
 function initializeTmdbHero() {
   const withBackdrop =
     tmdbMovies.filter(
-      item => item.backdrop
+      item =>
+        item.backdrop
     );
 
   const source =
@@ -709,7 +990,9 @@ function initializeTmdbHero() {
       ? withBackdrop
       : tmdbMovies;
 
-  if (source.length === 0) {
+  if (
+    source.length === 0
+  ) {
     return;
   }
 
@@ -724,7 +1007,8 @@ function initializeTmdbHero() {
           )
       );
 
-  currentHeroIndex = 0;
+  currentHeroIndex =
+    0;
 
   renderHeroIndicators();
   renderHero();
@@ -735,7 +1019,8 @@ function getCurrentHeroMovie() {
   return (
     heroMovies[
       currentHeroIndex
-    ] || null
+    ] ||
+    null
   );
 }
 
@@ -743,7 +1028,10 @@ function renderHero() {
   const item =
     getCurrentHeroMovie();
 
-  if (!item || !hero) {
+  if (
+    !item ||
+    !hero
+  ) {
     return;
   }
 
@@ -757,7 +1045,9 @@ function renderHero() {
     "hero--changing"
   );
 
-  if (isTmdbItem(item)) {
+  if (
+    isTmdbItem(item)
+  ) {
     renderTmdbHero(item);
   } else {
     renderLocalHero(item);
@@ -785,10 +1075,21 @@ function renderLocalHero(item) {
     item.title;
 
   heroMeta.innerHTML = `
-    <span>${item.year}</span>
-    <span>${item.genre}</span>
-    <span>${item.duration}</span>
-    <span>⭐ ${item.rating}</span>
+    <span>
+      ${item.year}
+    </span>
+
+    <span>
+      ${item.genre}
+    </span>
+
+    <span>
+      ${item.duration}
+    </span>
+
+    <span>
+      ⭐ ${item.rating}
+    </span>
   `;
 
   heroDescription.textContent =
@@ -859,7 +1160,9 @@ function renderTmdbHero(item) {
     </span>
 
     <span>
-      ${getTmdbGenres(item)}
+      ${getTmdbGenres(
+        item
+      )}
     </span>
 
     <span>
@@ -899,10 +1202,14 @@ function renderHeroIndicators() {
     return;
   }
 
-  heroIndicators.innerHTML = "";
+  heroIndicators.innerHTML =
+    "";
 
   heroMovies.forEach(
-    (item, index) => {
+    (
+      item,
+      index
+    ) => {
       const button =
         document.createElement(
           "button"
@@ -932,7 +1239,10 @@ function updateHeroIndicators() {
       ".hero-carousel__indicator"
     )
     .forEach(
-      (indicator, index) => {
+      (
+        indicator,
+        index
+      ) => {
         indicator.classList.toggle(
           "is-active",
           index ===
@@ -943,13 +1253,16 @@ function updateHeroIndicators() {
 }
 
 function showNextHero() {
-  if (heroMovies.length === 0) {
+  if (
+    heroMovies.length === 0
+  ) {
     return;
   }
 
   currentHeroIndex =
     (
-      currentHeroIndex + 1
+      currentHeroIndex +
+      1
     ) %
     heroMovies.length;
 
@@ -957,7 +1270,9 @@ function showNextHero() {
 }
 
 function showPreviousHero() {
-  if (heroMovies.length === 0) {
+  if (
+    heroMovies.length === 0
+  ) {
     return;
   }
 
@@ -975,12 +1290,14 @@ function showPreviousHero() {
 function goToHero(index) {
   if (
     index < 0 ||
-    index >= heroMovies.length
+    index >=
+      heroMovies.length
   ) {
     return;
   }
 
-  currentHeroIndex = index;
+  currentHeroIndex =
+    index;
 
   renderHero();
   restartHeroAutoplay();
@@ -989,7 +1306,10 @@ function goToHero(index) {
 function startHeroAutoplay() {
   stopHeroAutoplay();
 
-  if (heroMovies.length <= 1) {
+  if (
+    heroMovies.length <=
+    1
+  ) {
     return;
   }
 
@@ -1005,8 +1325,12 @@ function stopHeroAutoplay() {
     return;
   }
 
-  clearInterval(heroTimer);
-  heroTimer = null;
+  clearInterval(
+    heroTimer
+  );
+
+  heroTimer =
+    null;
 }
 
 function restartHeroAutoplay() {
@@ -1066,6 +1390,7 @@ function createMovieCard(item) {
       <div
         class="movie-card__poster-top"
       >
+
         <span
           class="movie-type-badge"
         >
@@ -1077,21 +1402,25 @@ function createMovieCard(item) {
         >
           ★ ${item.rating}
         </span>
+
       </div>
 
       <div
         class="movie-card__poster-center"
       >
+
         <span
           class="movie-card__icon"
         >
           ${item.icon}
         </span>
+
       </div>
 
       <div
         class="movie-card__poster-bottom"
       >
+
         <span
           class="movie-card__year"
         >
@@ -1109,6 +1438,7 @@ function createMovieCard(item) {
         >
           ${item.genre}
         </span>
+
       </div>
 
     </div>
@@ -1120,6 +1450,7 @@ function createMovieCard(item) {
       <div
         class="movie-card__info"
       >
+
         <h3>
           ${item.title}
         </h3>
@@ -1127,6 +1458,7 @@ function createMovieCard(item) {
         <div
           class="movie-card__meta"
         >
+
           <span>
             ${item.year}
           </span>
@@ -1138,12 +1470,15 @@ function createMovieCard(item) {
           <span>
             ${item.duration}
           </span>
+
         </div>
+
       </div>
 
       <div
         class="movie-card__actions"
       >
+
         <button
           class="trailer-button"
           data-trailer="${item.trailer}"
@@ -1171,6 +1506,7 @@ function createMovieCard(item) {
         >
           ${saved ? "♥" : "♡"}
         </button>
+
       </div>
 
     </div>
@@ -1178,9 +1514,11 @@ function createMovieCard(item) {
     <div
       class="movie-card__trailer"
     >
+
       <div
         class="trailer-preview"
       >
+
         <button
           class="trailer-close"
           aria-label="Fechar trailer"
@@ -1194,7 +1532,9 @@ function createMovieCard(item) {
           allow="autoplay; encrypted-media"
           allowfullscreen
         ></iframe>
+
       </div>
+
     </div>
   `;
 
@@ -1275,6 +1615,7 @@ function createTmdbMovieCard(item) {
       <div
         class="movie-card__poster-top"
       >
+
         <span
           class="movie-type-badge"
         >
@@ -1290,16 +1631,19 @@ function createTmdbMovieCard(item) {
         >
           ★ ${item.rating}
         </span>
+
       </div>
 
       <div
         class="movie-card__poster-bottom"
       >
+
         <span
           class="movie-card__year"
         >
           ${year}
         </span>
+
       </div>
 
     </div>
@@ -1311,6 +1655,7 @@ function createTmdbMovieCard(item) {
       <div
         class="movie-card__info"
       >
+
         <h3>
           ${item.title}
         </h3>
@@ -1318,6 +1663,7 @@ function createTmdbMovieCard(item) {
         <div
           class="movie-card__meta"
         >
+
           <span>
             ${year}
           </span>
@@ -1329,7 +1675,9 @@ function createTmdbMovieCard(item) {
           <span>
             ⭐ ${item.rating}
           </span>
+
         </div>
+
       </div>
 
       <div
@@ -1380,9 +1728,11 @@ function createTmdbMovieCard(item) {
           <div
             class="movie-card__trailer"
           >
+
             <div
               class="trailer-preview"
             >
+
               <button
                 class="trailer-close"
                 aria-label="Fechar trailer"
@@ -1396,7 +1746,9 @@ function createTmdbMovieCard(item) {
                 allow="autoplay; encrypted-media"
                 allowfullscreen
               ></iframe>
+
             </div>
+
           </div>
         `
         : ""
@@ -1411,11 +1763,16 @@ function createTmdbMovieCard(item) {
 ====================================================== */
 
 function renderFeaturedMovies() {
-  if (!featuredMoviesContainer) {
+  if (
+    !featuredMoviesContainer
+  ) {
     return;
   }
 
-  if (tmdbMovies.length === 0) {
+  if (
+    tmdbMovies.length ===
+    0
+  ) {
     renderFeaturedFallback();
     return;
   }
@@ -1425,12 +1782,14 @@ function renderFeaturedMovies() {
 
   tmdbMovies
     .slice(0, 8)
-    .forEach(item => {
-      featuredMoviesContainer
-        .appendChild(
-          createTmdbMovieCard(item)
-        );
-    });
+    .forEach(
+      item => {
+        featuredMoviesContainer
+          .appendChild(
+            createTmdbMovieCard(item)
+          );
+      }
+    );
 }
 
 /* ======================================================
@@ -1442,20 +1801,26 @@ function renderSeries() {
     return;
   }
 
-  if (tmdbSeries.length === 0) {
+  if (
+    tmdbSeries.length ===
+    0
+  ) {
     renderSeriesFallback();
     return;
   }
 
-  seriesGrid.innerHTML = "";
+  seriesGrid.innerHTML =
+    "";
 
   tmdbSeries
     .slice(0, 8)
-    .forEach(item => {
-      seriesGrid.appendChild(
-        createTmdbMovieCard(item)
-      );
-    });
+    .forEach(
+      item => {
+        seriesGrid.appendChild(
+          createTmdbMovieCard(item)
+        );
+      }
+    );
 }
 
 /* ======================================================
@@ -1489,7 +1854,8 @@ function renderMyList() {
     myList
       .map(saved => {
         if (
-          saved.source === "local"
+          saved.source ===
+          "local"
         ) {
           const localItem =
             movies.find(
@@ -1500,14 +1866,18 @@ function renderMyList() {
 
           return localItem
             ? {
-                source: "local",
-                item: localItem
+                source:
+                  "local",
+
+                item:
+                  localItem
               }
             : null;
         }
 
         const mediaType =
-          saved.mediaType === "tv"
+          saved.mediaType ===
+            "tv"
             ? "tv"
             : "movie";
 
@@ -1520,7 +1890,9 @@ function renderMyList() {
 
         return tmdbItem
           ? {
-              source: "tmdb",
+              source:
+                "tmdb",
+
               item:
                 normalizeTmdbItem(
                   tmdbItem,
@@ -1531,7 +1903,9 @@ function renderMyList() {
       })
       .filter(Boolean);
 
-  if (resolved.length === 0) {
+  if (
+    resolved.length === 0
+  ) {
     const empty =
       document.createElement(
         "div"
@@ -1541,7 +1915,9 @@ function renderMyList() {
       "empty-list";
 
     empty.innerHTML = `
-      <span>♡</span>
+      <span>
+        ♡
+      </span>
 
       <p>
         Sua lista ainda está vazia.
@@ -1553,7 +1929,10 @@ function renderMyList() {
       </small>
     `;
 
-    container.appendChild(empty);
+    container.appendChild(
+      empty
+    );
+
     return;
   }
 
@@ -1586,7 +1965,9 @@ function renderMyList() {
     }
   );
 
-  container.appendChild(grid);
+  container.appendChild(
+    grid
+  );
 }
 
 /* ======================================================
@@ -1599,38 +1980,47 @@ function getFilteredLocalMovies() {
       searchInput.value.trim()
     );
 
-  return movies.filter(item => {
-    const text =
-      normalizeText(`
-        ${item.title}
-        ${item.genre}
-        ${item.description}
-        ${item.year}
-      `);
+  return movies.filter(
+    item => {
+      const text =
+        normalizeText(`
+          ${item.title}
+          ${item.genre}
+          ${item.description}
+          ${item.year}
+        `);
 
-    const matchesSearch =
-      !term ||
-      text.includes(term);
+      const matchesSearch =
+        !term ||
+        text.includes(term);
 
-    const matchesGenre =
-      selectedGenre === "all" ||
-      item.genre === selectedGenre;
+      const matchesGenre =
+        selectedGenre ===
+          "all" ||
+        item.genre ===
+          selectedGenre;
 
-    return (
-      matchesSearch &&
-      matchesGenre
-    );
-  });
+      return (
+        matchesSearch &&
+        matchesGenre
+      );
+    }
+  );
 }
 
 function getFilteredTmdbSearchResults() {
-  if (selectedGenre === "all") {
+  if (
+    selectedGenre ===
+    "all"
+  ) {
     return tmdbSearchResults;
   }
 
   return tmdbSearchResults.filter(
     item =>
-      Array.isArray(item.genres) &&
+      Array.isArray(
+        item.genres
+      ) &&
       item.genres.includes(
         selectedGenre
       )
@@ -1638,7 +2028,7 @@ function getFilteredTmdbSearchResults() {
 }
 
 /* ======================================================
-   PAGINAÇÃO — FILMES + SÉRIES
+   PAGINAÇÃO
 ====================================================== */
 
 function createEmptyPaginationState() {
@@ -1659,26 +2049,35 @@ function resetSearchPagination() {
       createEmptyPaginationState()
   };
 
-  searchLoadingMore = false;
+  searchLoadingMore =
+    false;
 }
 
 function updatePaginationState(
   mediaType,
   data
 ) {
-  searchPagination[mediaType] = {
+  searchPagination[
+    mediaType
+  ] = {
     currentPage:
       Number(data.page) || 1,
 
     totalPages:
-      Number(data.totalPages) || 0,
+      Number(
+        data.totalPages
+      ) || 0,
 
     hasMore:
-      Boolean(data.hasMore),
+      Boolean(
+        data.hasMore
+      ),
 
     nextPage:
       data.nextPage
-        ? Number(data.nextPage)
+        ? Number(
+            data.nextPage
+          )
         : null
   };
 }
@@ -1694,21 +2093,32 @@ function mergeSearchResults(
   current,
   incoming
 ) {
-  const map = new Map();
+  const map =
+    new Map();
 
-  current.forEach(item => {
-    const key =
-      `${getTmdbMediaType(item)}:${item.id}`;
+  current.forEach(
+    item => {
+      const key =
+        `${getTmdbMediaType(item)}:${item.id}`;
 
-    map.set(key, item);
-  });
+      map.set(
+        key,
+        item
+      );
+    }
+  );
 
-  incoming.forEach(item => {
-    const key =
-      `${getTmdbMediaType(item)}:${item.id}`;
+  incoming.forEach(
+    item => {
+      const key =
+        `${getTmdbMediaType(item)}:${item.id}`;
 
-    map.set(key, item);
-  });
+      map.set(
+        key,
+        item
+      );
+    }
+  );
 
   return Array.from(
     map.values()
@@ -1717,13 +2127,19 @@ function mergeSearchResults(
 
 function cancelPendingSearch() {
   if (searchTimer) {
-    clearTimeout(searchTimer);
-    searchTimer = null;
+    clearTimeout(
+      searchTimer
+    );
+
+    searchTimer =
+      null;
   }
 
   if (searchController) {
     searchController.abort();
-    searchController = null;
+
+    searchController =
+      null;
   }
 }
 
@@ -1734,9 +2150,13 @@ function cancelPendingSearch() {
 function renderSearchLoading(
   localResults
 ) {
-  searchResults.innerHTML = "";
+  searchResults.innerHTML =
+    "";
 
-  if (localResults.length > 0) {
+  if (
+    localResults.length >
+    0
+  ) {
     const grid =
       document.createElement(
         "div"
@@ -1745,11 +2165,13 @@ function renderSearchLoading(
     grid.className =
       "movie-grid search-results__grid";
 
-    localResults.forEach(item => {
-      grid.appendChild(
-        createMovieCard(item)
-      );
-    });
+    localResults.forEach(
+      item => {
+        grid.appendChild(
+          createMovieCard(item)
+        );
+      }
+    );
 
     searchResults.appendChild(
       grid
@@ -1765,7 +2187,9 @@ function renderSearchLoading(
     "empty-list";
 
   loading.innerHTML = `
-    <span>🔎</span>
+    <span>
+      🔎
+    </span>
 
     <p>
       Pesquisando filmes e séries no TMDB...
@@ -1803,7 +2227,9 @@ async function fetchTmdbSearchPage(
     await fetch(
       url,
       signal
-        ? { signal }
+        ? {
+            signal
+          }
         : undefined
     );
 
@@ -1820,7 +2246,11 @@ async function fetchTmdbSearchPage(
   const data =
     await response.json();
 
-  if (!Array.isArray(data.results)) {
+  if (
+    !Array.isArray(
+      data.results
+    )
+  ) {
     throw new Error(
       `Formato inesperado da busca de ${
         mediaType === "tv"
@@ -1840,13 +2270,19 @@ async function searchTmdbContent(
     query.length <
     MIN_TMDB_SEARCH_LENGTH
   ) {
-    tmdbSearchResults = [];
+    tmdbSearchResults =
+      [];
+
     resetSearchPagination();
+
     renderCombinedSearchResults();
+
     return;
   }
 
-  if (searchController) {
+  if (
+    searchController
+  ) {
     searchController.abort();
   }
 
@@ -1888,19 +2324,25 @@ async function searchTmdbContent(
       normalizeText(
         searchInput.value.trim()
       ) !==
-      normalizeText(query)
+      normalizeText(
+        query
+      )
     ) {
       return;
     }
 
-    const firstPageItems = [];
-    let successfulRequests = 0;
+    const firstPageItems =
+      [];
+
+    let successfulRequests =
+      0;
 
     if (
       movieResult.status ===
       "fulfilled"
     ) {
-      successfulRequests += 1;
+      successfulRequests +=
+        1;
 
       updatePaginationState(
         "movie",
@@ -1919,23 +2361,14 @@ async function searchTmdbContent(
     } else {
       searchPagination.movie =
         createEmptyPaginationState();
-
-      if (
-        movieResult.reason?.name !==
-        "AbortError"
-      ) {
-        console.error(
-          "Erro na busca de filmes:",
-          movieResult.reason
-        );
-      }
     }
 
     if (
       tvResult.status ===
       "fulfilled"
     ) {
-      successfulRequests += 1;
+      successfulRequests +=
+        1;
 
       updatePaginationState(
         "tv",
@@ -1954,31 +2387,14 @@ async function searchTmdbContent(
     } else {
       searchPagination.tv =
         createEmptyPaginationState();
-
-      if (
-        tvResult.reason?.name !==
-        "AbortError"
-      ) {
-        console.error(
-          "Erro na busca de séries:",
-          tvResult.reason
-        );
-      }
     }
 
-    if (successfulRequests === 0) {
-      const aborted =
-        movieResult.reason?.name ===
-          "AbortError" ||
-        tvResult.reason?.name ===
-          "AbortError";
-
-      if (aborted) {
-        return;
-      }
-
+    if (
+      successfulRequests ===
+      0
+    ) {
       throw new Error(
-        "As buscas de filmes e séries falharam"
+        "Busca indisponível"
       );
     }
 
@@ -1988,12 +2404,11 @@ async function searchTmdbContent(
         firstPageItems
       );
 
-    activeSearchQuery = query;
+    activeSearchQuery =
+      query;
 
-    renderCombinedSearchResults(
-      false,
-      successfulRequests < 2
-    );
+    renderCombinedSearchResults();
+
   } catch (error) {
     if (
       error.name ===
@@ -2007,19 +2422,22 @@ async function searchTmdbContent(
       error
     );
 
-    tmdbSearchResults = [];
+    tmdbSearchResults =
+      [];
 
     resetSearchPagination();
 
     renderCombinedSearchResults(
       true
     );
+
   } finally {
     if (
       searchController ===
       controller
     ) {
-      searchController = null;
+      searchController =
+        null;
     }
   }
 }
@@ -2046,27 +2464,21 @@ async function loadMoreTmdbContent() {
     return;
   }
 
-  if (
-    normalizeText(query) !==
-    normalizeText(
-      activeSearchQuery
-    )
-  ) {
-    return;
-  }
-
-  searchLoadingMore = true;
+  searchLoadingMore =
+    true;
 
   renderCombinedSearchResults();
 
-  const requests = [];
+  const requests =
+    [];
 
   if (
     searchPagination.movie.hasMore &&
     searchPagination.movie.nextPage
   ) {
     requests.push({
-      mediaType: "movie",
+      mediaType:
+        "movie",
 
       promise:
         fetchTmdbSearchPage(
@@ -2082,7 +2494,8 @@ async function loadMoreTmdbContent() {
     searchPagination.tv.nextPage
   ) {
     requests.push({
-      mediaType: "tv",
+      mediaType:
+        "tv",
 
       promise:
         fetchTmdbSearchPage(
@@ -2102,12 +2515,18 @@ async function loadMoreTmdbContent() {
         )
       );
 
-    const newItems = [];
+    const newItems =
+      [];
 
     results.forEach(
-      (result, index) => {
+      (
+        result,
+        index
+      ) => {
         const mediaType =
-          requests[index].mediaType;
+          requests[
+            index
+          ].mediaType;
 
         if (
           result.status ===
@@ -2127,35 +2546,19 @@ async function loadMoreTmdbContent() {
                 )
             )
           );
-        } else {
-          console.error(
-            `Erro ao carregar mais ${
-              mediaType === "tv"
-                ? "séries"
-                : "filmes"
-            }:`,
-            result.reason
-          );
         }
       }
     );
-
-    if (
-      normalizeText(
-        searchInput.value.trim()
-      ) !==
-      normalizeText(query)
-    ) {
-      return;
-    }
 
     tmdbSearchResults =
       mergeSearchResults(
         tmdbSearchResults,
         newItems
       );
+
   } finally {
-    searchLoadingMore = false;
+    searchLoadingMore =
+      false;
 
     renderCombinedSearchResults();
   }
@@ -2166,8 +2569,7 @@ async function loadMoreTmdbContent() {
 ====================================================== */
 
 function renderCombinedSearchResults(
-  tmdbError = false,
-  partialError = false
+  tmdbError = false
 ) {
   const localResults =
     getFilteredLocalMovies();
@@ -2175,11 +2577,14 @@ function renderCombinedSearchResults(
   const tmdbResults =
     getFilteredTmdbSearchResults();
 
-  searchResults.innerHTML = "";
+  searchResults.innerHTML =
+    "";
 
   if (
-    localResults.length === 0 &&
-    tmdbResults.length === 0
+    localResults.length ===
+      0 &&
+    tmdbResults.length ===
+      0
   ) {
     searchResults.innerHTML = `
       <div
@@ -2216,40 +2621,25 @@ function renderCombinedSearchResults(
   grid.className =
     "movie-grid search-results__grid";
 
-  localResults.forEach(item => {
-    grid.appendChild(
-      createMovieCard(item)
-    );
-  });
-
-  tmdbResults.forEach(item => {
-    grid.appendChild(
-      createTmdbMovieCard(item)
-    );
-  });
-
-  searchResults.appendChild(grid);
-
-  if (partialError) {
-    const notice =
-      document.createElement(
-        "div"
+  localResults.forEach(
+    item => {
+      grid.appendChild(
+        createMovieCard(item)
       );
+    }
+  );
 
-    notice.className =
-      "empty-list";
+  tmdbResults.forEach(
+    item => {
+      grid.appendChild(
+        createTmdbMovieCard(item)
+      );
+    }
+  );
 
-    notice.innerHTML = `
-      <small>
-        Parte da busca online não respondeu.
-        Os resultados disponíveis foram mantidos.
-      </small>
-    `;
-
-    searchResults.appendChild(
-      notice
-    );
-  }
+  searchResults.appendChild(
+    grid
+  );
 
   const query =
     searchInput.value.trim();
@@ -2281,7 +2671,8 @@ function renderCombinedSearchResults(
         "button"
       );
 
-    button.type = "button";
+    button.type =
+      "button";
 
     button.id =
       "searchLoadMore";
@@ -2297,7 +2688,9 @@ function renderCombinedSearchResults(
         ? "Carregando..."
         : "Carregar mais";
 
-    wrapper.appendChild(button);
+    wrapper.appendChild(
+      button
+    );
 
     searchResults.appendChild(
       wrapper
@@ -2315,9 +2708,11 @@ function scheduleSearch() {
   const query =
     searchInput.value.trim();
 
-  activeSearchQuery = query;
+  activeSearchQuery =
+    query;
 
-  tmdbSearchResults = [];
+  tmdbSearchResults =
+    [];
 
   resetSearchPagination();
 
@@ -2326,6 +2721,7 @@ function scheduleSearch() {
     MIN_TMDB_SEARCH_LENGTH
   ) {
     renderCombinedSearchResults();
+
     return;
   }
 
@@ -2334,7 +2730,8 @@ function scheduleSearch() {
   searchTimer =
     setTimeout(
       () => {
-        searchTimer = null;
+        searchTimer =
+          null;
 
         searchTmdbContent(
           query
@@ -2359,10 +2756,14 @@ function openSearch() {
 
   stopHeroAutoplay();
 
-  tmdbSearchResults = [];
-  activeSearchQuery = "";
+  tmdbSearchResults =
+    [];
+
+  activeSearchQuery =
+    "";
 
   resetSearchPagination();
+
   renderCombinedSearchResults();
 
   setTimeout(
@@ -2384,10 +2785,17 @@ function closeSearch() {
     "search-open"
   );
 
-  searchInput.value = "";
-  selectedGenre = "all";
-  tmdbSearchResults = [];
-  activeSearchQuery = "";
+  searchInput.value =
+    "";
+
+  selectedGenre =
+    "all";
+
+  tmdbSearchResults =
+    [];
+
+  activeSearchQuery =
+    "";
 
   resetSearchPagination();
 
@@ -2401,13 +2809,15 @@ function updateGenreButtons() {
     .querySelectorAll(
       ".genre-filter"
     )
-    .forEach(button => {
-      button.classList.toggle(
-        "is-active",
-        button.dataset.genre ===
-          selectedGenre
-      );
-    });
+    .forEach(
+      button => {
+        button.classList.toggle(
+          "is-active",
+          button.dataset.genre ===
+            selectedGenre
+        );
+      }
+    );
 }
 
 /* ======================================================
@@ -2458,7 +2868,8 @@ function closeTrailer(card) {
     );
 
   if (iframe) {
-    iframe.src = "";
+    iframe.src =
+      "";
   }
 
   card.classList.remove(
@@ -2473,11 +2884,18 @@ function closeOtherTrailers(
     .querySelectorAll(
       ".movie-card.is-playing"
     )
-    .forEach(card => {
-      if (card !== currentCard) {
-        closeTrailer(card);
+    .forEach(
+      card => {
+        if (
+          card !==
+          currentCard
+        ) {
+          closeTrailer(
+            card
+          );
+        }
       }
-    });
+    );
 }
 
 /* ======================================================
@@ -2526,6 +2944,7 @@ function createDetailsModal() {
       <div
         class="details-modal__hero"
       >
+
         <div
           class="details-modal__poster-overlay"
         ></div>
@@ -2533,6 +2952,7 @@ function createDetailsModal() {
         <div
           class="details-modal__hero-content"
         >
+
           <span
             class="details-modal__type"
             id="modalType"
@@ -2551,12 +2971,15 @@ function createDetailsModal() {
             class="details-modal__hero-title"
             id="modalHeroTitle"
           ></span>
+
         </div>
+
       </div>
 
       <div
         class="details-modal__body"
       >
+
         <span
           class="section-label"
         >
@@ -2580,6 +3003,7 @@ function createDetailsModal() {
         <div
           class="details-modal__buttons"
         >
+
           <button
             class="button button--primary"
             id="modalTrailerButton"
@@ -2593,7 +3017,9 @@ function createDetailsModal() {
           >
             ♡ Minha Lista
           </button>
+
         </div>
+
       </div>
 
     </div>
@@ -2641,10 +3067,21 @@ function openLocalDetails(item) {
   document.getElementById(
     "modalMeta"
   ).innerHTML = `
-    <span>${item.year}</span>
-    <span>${item.genre}</span>
-    <span>${item.duration}</span>
-    <span>⭐ ${item.rating}</span>
+    <span>
+      ${item.year}
+    </span>
+
+    <span>
+      ${item.genre}
+    </span>
+
+    <span>
+      ${item.duration}
+    </span>
+
+    <span>
+      ⭐ ${item.rating}
+    </span>
   `;
 
   document.getElementById(
@@ -2664,7 +3101,8 @@ function openLocalDetails(item) {
     item.trailer;
 
   trailerButton.dataset.watchUrl =
-    getWatchUrl(item) || "";
+    getWatchUrl(item) ||
+    "";
 
   const favoriteButton =
     document.getElementById(
@@ -2762,7 +3200,9 @@ function openTmdbDetails(item) {
     </span>
 
     <span>
-      ${getTmdbGenres(item)}
+      ${getTmdbGenres(
+        item
+      )}
     </span>
 
     <span>
@@ -2787,10 +3227,12 @@ function openTmdbDetails(item) {
       : "none";
 
   trailerButton.dataset.trailer =
-    item.trailer || "";
+    item.trailer ||
+    "";
 
   trailerButton.dataset.watchUrl =
-    getWatchUrl(item) || "";
+    getWatchUrl(item) ||
+    "";
 
   const favoriteButton =
     document.getElementById(
@@ -2887,8 +3329,12 @@ function updateModalFavoriteButton(
 function refreshInterface() {
   renderSeries();
   renderMyList();
+  renderRecommendations();
 
-  if (tmdbMovies.length > 0) {
+  if (
+    tmdbMovies.length >
+    0
+  ) {
     renderFeaturedMovies();
   }
 
@@ -2941,10 +3387,16 @@ heroDetailsButton.addEventListener(
       return;
     }
 
-    if (isTmdbItem(item)) {
-      openTmdbDetails(item);
+    if (
+      isTmdbItem(item)
+    ) {
+      openTmdbDetails(
+        item
+      );
     } else {
-      openLocalDetails(item);
+      openLocalDetails(
+        item
+      );
     }
   }
 );
@@ -3020,6 +3472,7 @@ genreFilters.addEventListener(
       button.dataset.genre;
 
     updateGenreButtons();
+
     renderCombinedSearchResults();
   }
 );
@@ -3052,7 +3505,9 @@ document.addEventListener(
           ".movie-card"
         );
 
-      closeOtherTrailers(card);
+      closeOtherTrailers(
+        card
+      );
 
       openTrailer(
         card,
@@ -3093,7 +3548,10 @@ document.addEventListener(
       const id =
         detailsButton.dataset.movieId;
 
-      if (source === "tmdb") {
+      if (
+        source ===
+        "tmdb"
+      ) {
         const item =
           getTmdbItemFromAnySource(
             id,
@@ -3101,7 +3559,9 @@ document.addEventListener(
           );
 
         if (item) {
-          openTmdbDetails(item);
+          openTmdbDetails(
+            item
+          );
         }
       } else {
         const item =
@@ -3112,7 +3572,9 @@ document.addEventListener(
           );
 
         if (item) {
-          openLocalDetails(item);
+          openLocalDetails(
+            item
+          );
         }
       }
 
@@ -3136,7 +3598,10 @@ document.addEventListener(
       const id =
         favoriteButton.dataset.movieId;
 
-      if (source === "tmdb") {
+      if (
+        source ===
+        "tmdb"
+      ) {
         const item =
           getTmdbItemFromAnySource(
             id,
@@ -3189,7 +3654,10 @@ document.addEventListener(
       const id =
         modalFavorite.dataset.movieId;
 
-      if (source === "tmdb") {
+      if (
+        source ===
+        "tmdb"
+      ) {
         const item =
           getTmdbItemFromAnySource(
             id,
@@ -3230,6 +3698,7 @@ document.addEventListener(
       )
     ) {
       closeDetailsModal();
+
       return;
     }
 
@@ -3281,7 +3750,8 @@ document.addEventListener(
   "keydown",
   event => {
     if (
-      event.key === "ArrowRight" &&
+      event.key ===
+        "ArrowRight" &&
       !searchPanel.classList.contains(
         "is-open"
       )
@@ -3291,7 +3761,8 @@ document.addEventListener(
     }
 
     if (
-      event.key === "ArrowLeft" &&
+      event.key ===
+        "ArrowLeft" &&
       !searchPanel.classList.contains(
         "is-open"
       )
@@ -3300,7 +3771,10 @@ document.addEventListener(
       restartHeroAutoplay();
     }
 
-    if (event.key !== "Escape") {
+    if (
+      event.key !==
+      "Escape"
+    ) {
       return;
     }
 
@@ -3308,7 +3782,9 @@ document.addEventListener(
       .querySelectorAll(
         ".movie-card.is-playing"
       )
-      .forEach(closeTrailer);
+      .forEach(
+        closeTrailer
+      );
 
     const modal =
       document.getElementById(
@@ -3340,7 +3816,9 @@ document.addEventListener(
 document.addEventListener(
   "visibilitychange",
   () => {
-    if (document.hidden) {
+    if (
+      document.hidden
+    ) {
       stopHeroAutoplay();
     } else {
       startHeroAutoplay();
