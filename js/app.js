@@ -25,6 +25,9 @@ const CINEAI_API_URL =
 let tmdbMovies =
   [];
 
+let tmdbSearchResults =
+  [];
+
 
 /* ======================================================
    HERO
@@ -126,6 +129,12 @@ const STORAGE_KEY =
 const HERO_INTERVAL =
   7000;
 
+const SEARCH_DEBOUNCE =
+  450;
+
+const MIN_TMDB_SEARCH_LENGTH =
+  2;
+
 
 let myList =
   loadMyList();
@@ -141,6 +150,15 @@ let currentHeroIndex =
 
 let heroTimer =
   null;
+
+let searchTimer =
+  null;
+
+let searchController =
+  null;
+
+let activeSearchQuery =
+  "";
 
 
 /* ======================================================
@@ -265,7 +283,6 @@ function loadMyList() {
 
     const uniqueItems =
       [];
-
 
     const usedKeys =
       new Set();
@@ -597,6 +614,21 @@ function getTmdbMovieById(
 }
 
 
+function getSearchTmdbMovieById(
+  id
+) {
+
+  return tmdbSearchResults.find(
+    movie =>
+      String(
+        movie.id
+      ) === String(
+        id
+      )
+  );
+}
+
+
 function getSavedTmdbMovieById(
   id
 ) {
@@ -626,6 +658,9 @@ function getTmdbMovieFromAnySource(
 
   return (
     getTmdbMovieById(
+      id
+    ) ||
+    getSearchTmdbMovieById(
       id
     ) ||
     getSavedTmdbMovieById(
@@ -698,7 +733,7 @@ function getWatchUrl(
 
 
 /* ======================================================
-   TMDB
+   TMDB — FILMES EM ALTA
 ====================================================== */
 
 async function loadTmdbMovies() {
@@ -1989,6 +2024,9 @@ function renderMyList() {
             getTmdbMovieById(
               item.id
             ) ||
+            getSearchTmdbMovieById(
+              item.id
+            ) ||
             item.movie;
 
 
@@ -2096,71 +2134,10 @@ function renderMyList() {
 
 
 /* ======================================================
-   BUSCA
+   BUSCA — UTILITÁRIOS
 ====================================================== */
 
-function openSearch() {
-
-  searchPanel.classList.add(
-    "is-open"
-  );
-
-
-  document.body.classList.add(
-    "search-open"
-  );
-
-
-  stopHeroAutoplay();
-
-
-  applySearchAndFilters();
-
-
-  setTimeout(
-    () => {
-
-      searchInput.focus();
-
-    },
-    100
-  );
-}
-
-
-function closeSearch() {
-
-  searchPanel.classList.remove(
-    "is-open"
-  );
-
-
-  document.body.classList.remove(
-    "search-open"
-  );
-
-
-  searchInput.value =
-    "";
-
-
-  selectedGenre =
-    "all";
-
-
-  updateGenreButtons();
-
-
-  renderSearchResults(
-    movies
-  );
-
-
-  startHeroAutoplay();
-}
-
-
-function getFilteredMovies() {
+function getFilteredLocalMovies() {
 
   const searchTerm =
     normalizeText(
@@ -2205,16 +2182,55 @@ function getFilteredMovies() {
 }
 
 
-function applySearchAndFilters() {
+function getFilteredTmdbSearchResults() {
 
-  renderSearchResults(
-    getFilteredMovies()
+  if (
+    selectedGenre ===
+      "all"
+  ) {
+
+    return tmdbSearchResults;
+  }
+
+
+  return tmdbSearchResults.filter(
+    movie =>
+      Array.isArray(
+        movie.genres
+      ) &&
+      movie.genres.includes(
+        selectedGenre
+      )
   );
 }
 
 
-function renderSearchResults(
-  results
+function cancelPendingSearch() {
+
+  if (searchTimer) {
+
+    clearTimeout(
+      searchTimer
+    );
+
+
+    searchTimer =
+      null;
+  }
+
+
+  if (searchController) {
+
+    searchController.abort();
+
+    searchController =
+      null;
+  }
+}
+
+
+function renderSearchLoading(
+  localResults
 ) {
 
   searchResults.innerHTML =
@@ -2222,7 +2238,257 @@ function renderSearchResults(
 
 
   if (
-    results.length === 0
+    localResults.length >
+      0
+  ) {
+
+    const grid =
+      document.createElement(
+        "div"
+      );
+
+
+    grid.className =
+      "movie-grid search-results__grid";
+
+
+    localResults.forEach(
+      movie => {
+
+        grid.appendChild(
+          createMovieCard(
+            movie
+          )
+        );
+      }
+    );
+
+
+    searchResults.appendChild(
+      grid
+    );
+  }
+
+
+  const loading =
+    document.createElement(
+      "div"
+    );
+
+
+  loading.className =
+    "empty-list";
+
+
+  loading.style.marginTop =
+    "24px";
+
+
+  loading.innerHTML =
+    `
+      <span>
+        🔎
+      </span>
+
+      <p>
+        Pesquisando também no TMDB...
+      </p>
+
+      <small>
+        Aguarde um instante.
+      </small>
+    `;
+
+
+  searchResults.appendChild(
+    loading
+  );
+}
+
+
+/* ======================================================
+   BUSCA — TMDB
+====================================================== */
+
+async function searchTmdbMovies(
+  query
+) {
+
+  if (
+    query.length <
+      MIN_TMDB_SEARCH_LENGTH
+  ) {
+
+    tmdbSearchResults =
+      [];
+
+
+    renderCombinedSearchResults();
+
+    return;
+  }
+
+
+  if (searchController) {
+
+    searchController.abort();
+  }
+
+
+  searchController =
+    new AbortController();
+
+
+  const currentController =
+    searchController;
+
+
+  const localResults =
+    getFilteredLocalMovies();
+
+
+  renderSearchLoading(
+    localResults
+  );
+
+
+  try {
+
+    const url =
+      `${CINEAI_API_URL}?q=${encodeURIComponent(
+        query
+      )}`;
+
+
+    const response =
+      await fetch(
+        url,
+        {
+          signal:
+            currentController.signal
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Busca respondeu com status ${response.status}`
+      );
+    }
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !Array.isArray(
+        data.results
+      )
+    ) {
+
+      throw new Error(
+        "Formato inesperado da busca"
+      );
+    }
+
+
+    if (
+      normalizeText(
+        searchInput.value.trim()
+      ) !==
+      normalizeText(
+        query
+      )
+    ) {
+
+      return;
+    }
+
+
+    tmdbSearchResults =
+      data.results.map(
+        movie => ({
+          ...movie,
+          source:
+            "tmdb"
+        })
+      );
+
+
+    activeSearchQuery =
+      query;
+
+
+    renderCombinedSearchResults();
+
+
+  } catch (error) {
+
+    if (
+      error.name ===
+        "AbortError"
+    ) {
+
+      return;
+    }
+
+
+    console.error(
+      "Erro ao pesquisar no TMDB:",
+      error
+    );
+
+
+    tmdbSearchResults =
+      [];
+
+
+    renderCombinedSearchResults(
+      true
+    );
+
+
+  } finally {
+
+    if (
+      searchController ===
+        currentController
+    ) {
+
+      searchController =
+        null;
+    }
+  }
+}
+
+
+/* ======================================================
+   BUSCA — RENDER
+====================================================== */
+
+function renderCombinedSearchResults(
+  tmdbError = false
+) {
+
+  const localResults =
+    getFilteredLocalMovies();
+
+
+  const tmdbResults =
+    getFilteredTmdbSearchResults();
+
+
+  searchResults.innerHTML =
+    "";
+
+
+  if (
+    localResults.length ===
+      0 &&
+    tmdbResults.length ===
+      0
   ) {
 
     searchResults.innerHTML =
@@ -2242,7 +2508,11 @@ function renderSearchResults(
           </strong>
 
           <p>
-            Tente outro termo ou gênero.
+            ${
+              tmdbError
+                ? "A busca online não respondeu. Tente novamente."
+                : "Tente outro termo ou gênero."
+            }
           </p>
 
         </div>
@@ -2263,7 +2533,7 @@ function renderSearchResults(
     "movie-grid search-results__grid";
 
 
-  results.forEach(
+  localResults.forEach(
     movie => {
 
       grid.appendChild(
@@ -2275,9 +2545,152 @@ function renderSearchResults(
   );
 
 
+  tmdbResults.forEach(
+    movie => {
+
+      grid.appendChild(
+        createTmdbMovieCard(
+          movie
+        )
+      );
+    }
+  );
+
+
   searchResults.appendChild(
     grid
   );
+}
+
+
+function scheduleSearch() {
+
+  cancelPendingSearch();
+
+
+  const query =
+    searchInput.value.trim();
+
+
+  activeSearchQuery =
+    query;
+
+
+  if (
+    query.length <
+      MIN_TMDB_SEARCH_LENGTH
+  ) {
+
+    tmdbSearchResults =
+      [];
+
+
+    renderCombinedSearchResults();
+
+    return;
+  }
+
+
+  renderCombinedSearchResults();
+
+
+  searchTimer =
+    setTimeout(
+      () => {
+
+        searchTimer =
+          null;
+
+
+        searchTmdbMovies(
+          query
+        );
+
+      },
+      SEARCH_DEBOUNCE
+    );
+}
+
+
+/* ======================================================
+   BUSCA — PAINEL
+====================================================== */
+
+function openSearch() {
+
+  searchPanel.classList.add(
+    "is-open"
+  );
+
+
+  document.body.classList.add(
+    "search-open"
+  );
+
+
+  stopHeroAutoplay();
+
+
+  tmdbSearchResults =
+    [];
+
+
+  activeSearchQuery =
+    "";
+
+
+  renderCombinedSearchResults();
+
+
+  setTimeout(
+    () => {
+
+      searchInput.focus();
+
+    },
+    100
+  );
+}
+
+
+function closeSearch() {
+
+  cancelPendingSearch();
+
+
+  searchPanel.classList.remove(
+    "is-open"
+  );
+
+
+  document.body.classList.remove(
+    "search-open"
+  );
+
+
+  searchInput.value =
+    "";
+
+
+  selectedGenre =
+    "all";
+
+
+  tmdbSearchResults =
+    [];
+
+
+  activeSearchQuery =
+    "";
+
+
+  updateGenreButtons();
+
+
+  renderCombinedSearchResults();
+
+
+  startHeroAutoplay();
 }
 
 
@@ -2954,7 +3367,7 @@ function refreshInterface() {
     )
   ) {
 
-    applySearchAndFilters();
+    renderCombinedSearchResults();
   }
 
 
@@ -3092,7 +3505,7 @@ searchClose.addEventListener(
 
 searchInput.addEventListener(
   "input",
-  applySearchAndFilters
+  scheduleSearch
 );
 
 
@@ -3117,7 +3530,7 @@ genreFilters.addEventListener(
 
     updateGenreButtons();
 
-    applySearchAndFilters();
+    renderCombinedSearchResults();
   }
 );
 
@@ -3561,9 +3974,7 @@ createDetailsModal();
 
 refreshInterface();
 
-renderSearchResults(
-  movies
-);
+renderCombinedSearchResults();
 
 
 /*
