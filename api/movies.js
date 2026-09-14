@@ -4,21 +4,22 @@ const TMDB_BASE_URL =
 const TMDB_IMAGE_URL =
   "https://image.tmdb.org/t/p";
 
-const TRAILER_ITEMS_LIMIT =
-  10;
+/*
+  Performance:
+  antes o carregamento inicial consultava trailers
+  para até 10 títulos por categoria.
+  Agora enriquecemos somente os 3 primeiros.
+*/
+const TRAILER_ITEMS_LIMIT = 3;
 
-const SEARCH_TRAILER_LIMIT =
-  8;
+const SEARCH_TRAILER_LIMIT = 4;
 
 
 /* ======================================================
-   CORS
+   HEADERS
 ====================================================== */
 
-function setCorsHeaders(
-  response
-) {
-
+function setCorsHeaders(response) {
   response.setHeader(
     "Access-Control-Allow-Origin",
     "*"
@@ -36,25 +37,119 @@ function setCorsHeaders(
 }
 
 
+function setCacheHeaders(
+  response,
+  isSearch = false
+) {
+  response.setHeader(
+    "Cache-Control",
+    isSearch
+      ? "public, s-maxage=300, stale-while-revalidate=3600"
+      : "public, s-maxage=900, stale-while-revalidate=86400"
+  );
+}
+
+
 /* ======================================================
    TIPO DE CONTEÚDO
 ====================================================== */
 
-function getMediaType(
-  request
-) {
-
+function getMediaType(request) {
   const rawType =
-    Array.isArray(
-      request.query?.type
-    )
+    Array.isArray(request.query?.type)
       ? request.query.type[0]
       : request.query?.type;
-
 
   return rawType === "tv"
     ? "tv"
     : "movie";
+}
+
+
+/* ======================================================
+   PÁGINA
+====================================================== */
+
+function getSearchPage(request) {
+  const rawPage =
+    Array.isArray(request.query?.page)
+      ? request.query.page[0]
+      : request.query?.page;
+
+  const parsedPage =
+    Number.parseInt(
+      rawPage,
+      10
+    );
+
+  if (
+    !Number.isInteger(parsedPage) ||
+    parsedPage < 1
+  ) {
+    return 1;
+  }
+
+  return Math.min(
+    parsedPage,
+    500
+  );
+}
+
+
+/* ======================================================
+   QUERY
+====================================================== */
+
+function getSearchQuery(request) {
+  const rawQuery =
+    Array.isArray(request.query?.q)
+      ? request.query.q[0]
+      : request.query?.q;
+
+  return String(
+    rawQuery || ""
+  )
+    .trim()
+    .slice(
+      0,
+      100
+    );
+}
+
+
+/* ======================================================
+   FETCH TMDB
+====================================================== */
+
+async function fetchTmdbJson(
+  url,
+  headers,
+  errorCode
+) {
+  const response =
+    await fetch(
+      url,
+      {
+        headers
+      }
+    );
+
+  if (!response.ok) {
+    const errorData =
+      await response.text();
+
+    console.error(
+      `Erro TMDB ${errorCode}:`,
+      response.status,
+      errorData
+    );
+
+    throw new Error(
+      errorCode
+    );
+  }
+
+  return response.json();
 }
 
 
@@ -65,7 +160,6 @@ function getMediaType(
 function selectBestTrailer(
   videos = []
 ) {
-
   const youtubeVideos =
     videos.filter(
       video =>
@@ -73,14 +167,11 @@ function selectBestTrailer(
         video.key
     );
 
-
   if (
     youtubeVideos.length === 0
   ) {
-
     return null;
   }
-
 
   const officialTrailers =
     youtubeVideos.filter(
@@ -89,13 +180,11 @@ function selectBestTrailer(
         video.official
     );
 
-
   const trailers =
     youtubeVideos.filter(
       video =>
         video.type === "Trailer"
     );
-
 
   const officialTeasers =
     youtubeVideos.filter(
@@ -104,13 +193,11 @@ function selectBestTrailer(
         video.official
     );
 
-
   const teasers =
     youtubeVideos.filter(
       video =>
         video.type === "Teaser"
     );
-
 
   const selected =
     officialTrailers[0] ||
@@ -119,15 +206,11 @@ function selectBestTrailer(
     teasers[0] ||
     youtubeVideos[0];
 
-
   if (!selected) {
-
     return null;
   }
 
-
   return {
-
     id:
       selected.id ||
       null,
@@ -167,13 +250,12 @@ function selectBestTrailer(
 
     watchUrl:
       `https://www.youtube.com/watch?v=${selected.key}`
-
   };
 }
 
 
 /* ======================================================
-   BUSCA DE TRAILER
+   TRAILER
 ====================================================== */
 
 async function fetchTrailer(
@@ -181,74 +263,81 @@ async function fetchTrailer(
   mediaType,
   headers
 ) {
+  const endpoint =
+    mediaType === "tv"
+      ? "tv"
+      : "movie";
+
+  const ptUrl =
+    `${TMDB_BASE_URL}/${endpoint}/${itemId}/videos?language=pt-BR`;
+
+  const enUrl =
+    `${TMDB_BASE_URL}/${endpoint}/${itemId}/videos?language=en-US`;
 
   try {
+    /*
+      PT-BR e EN-US são consultados em paralelo.
+      Isso reduz bastante o tempo de resposta
+      comparado à consulta sequencial anterior.
+    */
+    const [
+      ptResult,
+      enResult
+    ] =
+      await Promise.allSettled([
+        fetch(
+          ptUrl,
+          {
+            headers
+          }
+        ),
 
-    const endpoint =
-      mediaType === "tv"
-        ? "tv"
-        : "movie";
+        fetch(
+          enUrl,
+          {
+            headers
+          }
+        )
+      ]);
 
-
-    const ptResponse =
-      await fetch(
-        `${TMDB_BASE_URL}/${endpoint}/${itemId}/videos?language=pt-BR`,
-        {
-          headers
-        }
-      );
-
-
-    if (ptResponse.ok) {
-
+    if (
+      ptResult.status ===
+        "fulfilled" &&
+      ptResult.value.ok
+    ) {
       const ptData =
-        await ptResponse.json();
-
+        await ptResult.value.json();
 
       const ptTrailer =
         selectBestTrailer(
           ptData.results || []
         );
 
-
       if (ptTrailer) {
-
         return ptTrailer;
       }
     }
 
+    if (
+      enResult.status ===
+        "fulfilled" &&
+      enResult.value.ok
+    ) {
+      const enData =
+        await enResult.value.json();
 
-    const enResponse =
-      await fetch(
-        `${TMDB_BASE_URL}/${endpoint}/${itemId}/videos?language=en-US`,
-        {
-          headers
-        }
+      return selectBestTrailer(
+        enData.results || []
       );
-
-
-    if (!enResponse.ok) {
-
-      return null;
     }
 
-
-    const enData =
-      await enResponse.json();
-
-
-    return selectBestTrailer(
-      enData.results || []
-    );
-
+    return null;
 
   } catch (error) {
-
     console.error(
       `Erro ao consultar trailer ${mediaType} ${itemId}:`,
       error
     );
-
 
     return null;
   }
@@ -265,18 +354,14 @@ function mapItem(
   mediaType,
   trailer = null
 ) {
-
   const isTv =
     mediaType === "tv";
 
-
   return {
-
     id:
       item.id,
 
-    mediaType:
-      mediaType,
+    mediaType,
 
     type:
       isTv
@@ -329,9 +414,7 @@ function mapItem(
               genreId
             ]
         )
-        .filter(
-          Boolean
-        ),
+        .filter(Boolean),
 
     originCountry:
       isTv
@@ -343,14 +426,19 @@ function mapItem(
       item.original_language ||
       null,
 
+    /*
+      Redução importante do peso das imagens.
+      O projeto não precisa de poster w500
+      nem backdrop "original" para este layout.
+    */
     poster:
       item.poster_path
-        ? `${TMDB_IMAGE_URL}/w500${item.poster_path}`
+        ? `${TMDB_IMAGE_URL}/w342${item.poster_path}`
         : null,
 
     backdrop:
       item.backdrop_path
-        ? `${TMDB_IMAGE_URL}/original${item.backdrop_path}`
+        ? `${TMDB_IMAGE_URL}/w1280${item.backdrop_path}`
         : null,
 
     trailer:
@@ -372,13 +460,12 @@ function mapItem(
     trailerLanguage:
       trailer?.language ||
       null
-
   };
 }
 
 
 /* ======================================================
-   TRAILERS
+   ENRIQUECIMENTO DE TRAILERS
 ====================================================== */
 
 async function enrichWithTrailers(
@@ -388,13 +475,24 @@ async function enrichWithTrailers(
   headers,
   limit
 ) {
-
   const itemsForTrailers =
     sourceItems.slice(
       0,
       limit
     );
 
+  if (
+    itemsForTrailers.length === 0
+  ) {
+    return sourceItems.map(
+      item =>
+        mapItem(
+          item,
+          genreMap,
+          mediaType
+        )
+    );
+  }
 
   const trailers =
     await Promise.all(
@@ -408,17 +506,14 @@ async function enrichWithTrailers(
       )
     );
 
-
   const trailerMap =
     new Map();
-
 
   itemsForTrailers.forEach(
     (
       item,
       index
     ) => {
-
       trailerMap.set(
         item.id,
         trailers[index] ||
@@ -426,7 +521,6 @@ async function enrichWithTrailers(
       );
     }
   );
-
 
   return sourceItems.map(
     item =>
@@ -444,74 +538,6 @@ async function enrichWithTrailers(
 
 
 /* ======================================================
-   PÁGINA
-====================================================== */
-
-function getSearchPage(
-  request
-) {
-
-  const rawPage =
-    Array.isArray(
-      request.query?.page
-    )
-      ? request.query.page[0]
-      : request.query?.page;
-
-
-  const parsedPage =
-    Number.parseInt(
-      rawPage,
-      10
-    );
-
-
-  if (
-    !Number.isInteger(
-      parsedPage
-    ) ||
-    parsedPage < 1
-  ) {
-
-    return 1;
-  }
-
-
-  return Math.min(
-    parsedPage,
-    500
-  );
-}
-
-
-/* ======================================================
-   QUERY
-====================================================== */
-
-function getSearchQuery(
-  request
-) {
-
-  const rawQuery =
-    Array.isArray(
-      request.query?.q
-    )
-      ? request.query.q[0]
-      : request.query?.q;
-
-
-  return String(
-    rawQuery || ""
-  )
-    .trim()
-    .slice(
-      0,
-      100
-    );
-}
-
-
-/* ======================================================
    GÊNEROS
 ====================================================== */
 
@@ -519,42 +545,16 @@ async function fetchGenres(
   mediaType,
   headers
 ) {
-
-  const genresResponse =
-    await fetch(
+  const data =
+    await fetchTmdbJson(
       `${TMDB_BASE_URL}/genre/${mediaType}/list?language=pt-BR`,
-      {
-        headers
-      }
-    );
-
-
-  if (!genresResponse.ok) {
-
-    const errorData =
-      await genresResponse.text();
-
-
-    console.error(
-      `Erro TMDB Genres ${mediaType}:`,
-      genresResponse.status,
-      errorData
-    );
-
-
-    throw new Error(
+      headers,
       "GENRES_ERROR"
     );
-  }
-
-
-  const genresData =
-    await genresResponse.json();
-
 
   return Object.fromEntries(
     (
-      genresData.genres ||
+      data.genres ||
       []
     ).map(
       genre => [
@@ -562,6 +562,65 @@ async function fetchGenres(
         genre.name
       ]
     )
+  );
+}
+
+
+/* ======================================================
+   BUSCA RAW
+====================================================== */
+
+async function fetchSearchRaw(
+  searchQuery,
+  searchPage,
+  mediaType,
+  headers
+) {
+  const endpoint =
+    mediaType === "tv"
+      ? "tv"
+      : "movie";
+
+  const searchUrl =
+    new URL(
+      `${TMDB_BASE_URL}/search/${endpoint}`
+    );
+
+  searchUrl.searchParams.set(
+    "query",
+    searchQuery
+  );
+
+  searchUrl.searchParams.set(
+    "language",
+    "pt-BR"
+  );
+
+  searchUrl.searchParams.set(
+    "include_adult",
+    "false"
+  );
+
+  searchUrl.searchParams.set(
+    "page",
+    String(
+      searchPage
+    )
+  );
+
+  if (
+    mediaType === "movie"
+  ) {
+    searchUrl.searchParams.set(
+      "region",
+      "BR"
+    );
+  }
+
+  return fetchTmdbJson(
+    searchUrl,
+    headers,
+    "SEARCH_ERROR"
   );
 }
 
@@ -575,102 +634,15 @@ async function searchItems(
   searchPage,
   mediaType,
   genreMap,
-  headers
+  headers,
+  searchData
 ) {
-
-  const endpoint =
-    mediaType === "tv"
-      ? "tv"
-      : "movie";
-
-
-  const searchUrl =
-    new URL(
-      `${TMDB_BASE_URL}/search/${endpoint}`
-    );
-
-
-  searchUrl.searchParams.set(
-    "query",
-    searchQuery
-  );
-
-
-  searchUrl.searchParams.set(
-    "language",
-    "pt-BR"
-  );
-
-
-  searchUrl.searchParams.set(
-    "include_adult",
-    "false"
-  );
-
-
-  searchUrl.searchParams.set(
-    "page",
-    String(
-      searchPage
-    )
-  );
-
-
-  /*
-    O parâmetro region é aplicável
-    à busca de filmes.
-  */
-
-  if (
-    mediaType === "movie"
-  ) {
-
-    searchUrl.searchParams.set(
-      "region",
-      "BR"
-    );
-  }
-
-
-  const searchResponse =
-    await fetch(
-      searchUrl,
-      {
-        headers
-      }
-    );
-
-
-  if (!searchResponse.ok) {
-
-    const errorData =
-      await searchResponse.text();
-
-
-    console.error(
-      `Erro TMDB Search ${mediaType}:`,
-      searchResponse.status,
-      errorData
-    );
-
-
-    throw new Error(
-      "SEARCH_ERROR"
-    );
-  }
-
-
-  const searchData =
-    await searchResponse.json();
-
-
   const sourceItems =
     Array.isArray(
       searchData.results
     )
       ? searchData.results
       : [];
-
 
   const results =
     await enrichWithTrailers(
@@ -681,19 +653,15 @@ async function searchItems(
       SEARCH_TRAILER_LIMIT
     );
 
-
   const currentPage =
     searchData.page ||
     searchPage;
-
 
   const totalPages =
     searchData.total_pages ||
     0;
 
-
   return {
-
     source:
       "TMDB",
 
@@ -738,8 +706,23 @@ async function searchItems(
       ).length,
 
     results
-
   };
+}
+
+
+/* ======================================================
+   TRENDING RAW
+====================================================== */
+
+async function fetchTrendingRaw(
+  mediaType,
+  headers
+) {
+  return fetchTmdbJson(
+    `${TMDB_BASE_URL}/trending/${mediaType}/week?language=pt-BR`,
+    headers,
+    "TRENDING_ERROR"
+  );
 }
 
 
@@ -747,51 +730,18 @@ async function searchItems(
    TRENDING
 ====================================================== */
 
-async function fetchTrending(
+async function buildTrending(
   mediaType,
   genreMap,
-  headers
+  headers,
+  trendingData
 ) {
-
-  const trendingResponse =
-    await fetch(
-      `${TMDB_BASE_URL}/trending/${mediaType}/week?language=pt-BR`,
-      {
-        headers
-      }
-    );
-
-
-  if (!trendingResponse.ok) {
-
-    const errorData =
-      await trendingResponse.text();
-
-
-    console.error(
-      `Erro TMDB Trending ${mediaType}:`,
-      trendingResponse.status,
-      errorData
-    );
-
-
-    throw new Error(
-      "TRENDING_ERROR"
-    );
-  }
-
-
-  const trendingData =
-    await trendingResponse.json();
-
-
   const sourceItems =
     Array.isArray(
       trendingData.results
     )
       ? trendingData.results
       : [];
-
 
   const results =
     await enrichWithTrailers(
@@ -802,9 +752,7 @@ async function fetchTrending(
       TRAILER_ITEMS_LIMIT
     );
 
-
   return {
-
     source:
       "TMDB",
 
@@ -830,7 +778,6 @@ async function fetchTrending(
       ).length,
 
     results
-
   };
 }
 
@@ -843,28 +790,23 @@ export default async function handler(
   request,
   response
 ) {
-
   setCorsHeaders(
     response
   );
-
 
   if (
     request.method ===
     "OPTIONS"
   ) {
-
     return response
       .status(204)
       .end();
   }
 
-
   if (
     request.method !==
     "GET"
   ) {
-
     return response
       .status(405)
       .json({
@@ -873,13 +815,10 @@ export default async function handler(
       });
   }
 
-
   const token =
     process.env.TMDB_TOKEN;
 
-
   if (!token) {
-
     return response
       .status(500)
       .json({
@@ -888,46 +827,57 @@ export default async function handler(
       });
   }
 
-
   const headers = {
-
     Authorization:
       `Bearer ${token}`,
 
     Accept:
       "application/json"
-
   };
 
-
   try {
-
     const mediaType =
       getMediaType(
         request
       );
-
 
     const searchQuery =
       getSearchQuery(
         request
       );
 
-
     const searchPage =
       getSearchPage(
         request
       );
 
-
-    const genreMap =
-      await fetchGenres(
-        mediaType,
-        headers
+    /*
+      Gêneros e conteúdo principal agora
+      são requisitados simultaneamente.
+    */
+    if (searchQuery) {
+      setCacheHeaders(
+        response,
+        true
       );
 
+      const [
+        genreMap,
+        searchData
+      ] =
+        await Promise.all([
+          fetchGenres(
+            mediaType,
+            headers
+          ),
 
-    if (searchQuery) {
+          fetchSearchRaw(
+            searchQuery,
+            searchPage,
+            mediaType,
+            headers
+          )
+        ]);
 
       const data =
         await searchItems(
@@ -935,42 +885,58 @@ export default async function handler(
           searchPage,
           mediaType,
           genreMap,
-          headers
+          headers,
+          searchData
         );
-
 
       return response
         .status(200)
         .json(data);
     }
 
+    setCacheHeaders(
+      response,
+      false
+    );
+
+    const [
+      genreMap,
+      trendingData
+    ] =
+      await Promise.all([
+        fetchGenres(
+          mediaType,
+          headers
+        ),
+
+        fetchTrendingRaw(
+          mediaType,
+          headers
+        )
+      ]);
 
     const data =
-      await fetchTrending(
+      await buildTrending(
         mediaType,
         genreMap,
-        headers
+        headers,
+        trendingData
       );
-
 
     return response
       .status(200)
       .json(data);
 
-
   } catch (error) {
-
     console.error(
       "Erro interno:",
       error
     );
 
-
     if (
       error.message ===
       "GENRES_ERROR"
     ) {
-
       return response
         .status(502)
         .json({
@@ -979,12 +945,10 @@ export default async function handler(
         });
     }
 
-
     if (
       error.message ===
       "SEARCH_ERROR"
     ) {
-
       return response
         .status(502)
         .json({
@@ -993,12 +957,10 @@ export default async function handler(
         });
     }
 
-
     if (
       error.message ===
       "TRENDING_ERROR"
     ) {
-
       return response
         .status(502)
         .json({
@@ -1006,7 +968,6 @@ export default async function handler(
             "Erro ao consultar conteúdos em alta"
         });
     }
-
 
     return response
       .status(500)
